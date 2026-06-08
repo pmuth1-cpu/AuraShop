@@ -63,25 +63,31 @@ router.get('/:id', (req, res) => {
 
 router.post('/', verifyToken, upload.single('image'), (req, res) => {
   try {
+    console.log('Create product - body:', req.body);
+    console.log('Create product - file:', req.file ? { filename: req.file.filename, size: req.file.size } : null);
     const product = createProduct({
       ...req.body,
       image: req.file ? `/uploads/${req.file.filename}` : '',
     });
+    console.log('Product created:', product._id);
     res.status(201).json(product);
   } catch (error) {
+    console.error('Create product error:', error);
     res.status(400).json({ message: 'Error creating product.', error: error.message });
   }
 });
 
 router.put('/:id', verifyToken, upload.single('image'), (req, res) => {
   try {
+    console.log('Update product - id:', req.params.id, 'body:', req.body);
     const data = { ...req.body };
     if (req.file) data.image = `/uploads/${req.file.filename}`;
-
     const product = updateProduct(req.params.id, data);
     if (!product) return res.status(404).json({ message: 'Product not found.' });
+    console.log('Product updated:', product._id);
     res.json(product);
   } catch (error) {
+    console.error('Update product error:', error);
     res.status(400).json({ message: 'Error updating product.', error: error.message });
   }
 });

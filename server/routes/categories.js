@@ -49,10 +49,58 @@ router.get('/:id', (req, res) => {
 
 router.post('/', verifyToken, upload.single('image'), (req, res) => {
   try {
+    console.log('Create category - body:', req.body);
+    console.log('Create category - file:', req.file ? { filename: req.file.filename, size: req.file.size } : null);
     const cat = createCategory({
       ...req.body,
       image: req.file ? `/uploads/${req.file.filename}` : '',
     });
+    console.log('Category created:', cat._id);
+    res.status(201).json(cat);
+  } catch (err) {
+    console.error('Create category error:', err);
+    res.status(400).json({ message: 'Error creating category.', error: err.message });
+  }
+});
+
+router.put('/:id', verifyToken, upload.single('image'), (req, res) => {
+  try {
+    console.log('Update category - id:', req.params.id, 'body:', req.body);
+    const data = { ...req.body };
+    if (req.file) data.image = `/uploads/${req.file.filename}`;
+    const cat = updateCategory(req.params.id, data);
+    if (!cat) return res.status(404).json({ message: 'Category not found.' });
+    console.log('Category updated:', cat._id);
+    res.json(cat);
+  } catch (err) {
+    console.error('Update category error:', err);
+    res.status(400).json({ message: 'Error updating category.', error: err.message });
+  }
+});
+
+router.delete('/:id', verifyToken, (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('Delete category request for id:', id);
+    const deleted = deleteCategory(id);
+    console.log('Deleted category result:', deleted);
+    if (!deleted) return res.status(404).json({ message: 'Category not found.' });
+    if (deleted.image) {
+      const imagePath = path.join(__dirname, '..', deleted.image);
+      console.log('Attempting to delete image at:', imagePath);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log('Image deleted successfully');
+      } else {
+        console.log('Image file not found, skipping');
+      }
+    }
+    res.json({ message: 'Category deleted.' });
+  } catch (err) {
+    console.error('Delete category error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
     res.status(201).json(cat);
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
