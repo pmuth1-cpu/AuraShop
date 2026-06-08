@@ -10,5 +10,6 @@ services:
         value: production
       - key: JWT_SECRET
         value: aura-shop-secret-key-2026-change-in-production
+        helpText: Keep this stable; changing it invalidates all existing tokens.
       - key: PORT
         value: 5000
