@@ -37,11 +37,14 @@ export default function AdminCategories() {
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Delete category "${name}"?`)) return;
     try {
+      console.log('Attempting to delete category:', id);
       await categoryAPI.delete(id);
+      console.log('Category deleted successfully');
       toast.success('Category deleted');
       fetchCategories();
     } catch (err) {
-      toast.error('Failed to delete');
+      console.error('Delete category failed:', err.response?.data || err.message);
+      toast.error(err.response?.data?.message || 'Failed to delete');
     }
   };
 

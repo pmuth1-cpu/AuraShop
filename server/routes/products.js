@@ -88,16 +88,26 @@ router.put('/:id', verifyToken, upload.single('image'), (req, res) => {
 
 router.delete('/:id', verifyToken, (req, res) => {
   try {
-    const deleted = deleteProduct(req.params.id);
+    const { id } = req.params;
+    console.log('Delete product request for id:', id);
+    const deleted = deleteProduct(id);
+    console.log('Deleted product result:', deleted);
     if (!deleted) return res.status(404).json({ message: 'Product not found.' });
 
     if (deleted.image) {
       const imagePath = path.join(__dirname, '..', deleted.image);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+      console.log('Attempting to delete image at:', imagePath);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log('Image deleted successfully');
+      } else {
+        console.log('Image file not found, skipping');
+      }
     }
 
     res.json({ message: 'Product deleted successfully.' });
   } catch (error) {
+    console.error('Delete product error:', error);
     res.status(500).json({ message: 'Server error.', error: error.message });
   }
 });

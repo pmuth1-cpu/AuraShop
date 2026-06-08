@@ -69,14 +69,26 @@ router.put('/:id', verifyToken, upload.single('image'), (req, res) => {
 
 router.delete('/:id', verifyToken, (req, res) => {
   try {
-    const deleted = deleteCategory(req.params.id);
+    const { id } = req.params;
+    console.log('Delete category request for id:', id);
+    const deleted = deleteCategory(id);
+    console.log('Deleted category result:', deleted);
     if (!deleted) return res.status(404).json({ message: 'Category not found.' });
     if (deleted.image) {
       const imagePath = path.join(__dirname, '..', deleted.image);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+      console.log('Attempting to delete image at:', imagePath);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log('Image deleted successfully');
+      } else {
+        console.log('Image file not found, skipping');
+      }
     }
     res.json({ message: 'Category deleted.' });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    console.error('Delete category error:', err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 export default router;

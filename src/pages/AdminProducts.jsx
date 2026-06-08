@@ -35,10 +35,15 @@ export default function AdminProducts() {
   const handleDelete = async (id, name) => {
     if (!confirm(`Delete "${name}"?`)) return;
     try {
+      console.log('Attempting to delete product:', id);
       await productAPI.delete(id);
+      console.log('Product deleted successfully');
       toast.success('Product deleted');
       fetchProducts();
-    } catch { toast.error('Failed to delete'); }
+    } catch (err) {
+      console.error('Delete product failed:', err.response?.data || err.message);
+      toast.error(err.response?.data?.message || 'Failed to delete');
+    }
   };
 
   // Sort and paginate
