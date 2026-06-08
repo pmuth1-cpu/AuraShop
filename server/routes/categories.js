@@ -101,42 +101,5 @@ router.delete('/:id', verifyToken, (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-    res.status(201).json(cat);
-  } catch (err) { res.status(400).json({ message: err.message }); }
-});
-
-router.put('/:id', verifyToken, upload.single('image'), (req, res) => {
-  try {
-    const data = { ...req.body };
-    if (req.file) data.image = `/uploads/${req.file.filename}`;
-    const cat = updateCategory(req.params.id, data);
-    if (!cat) return res.status(404).json({ message: 'Category not found.' });
-    res.json(cat);
-  } catch (err) { res.status(400).json({ message: err.message }); }
-});
-
-router.delete('/:id', verifyToken, (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log('Delete category request for id:', id);
-    const deleted = deleteCategory(id);
-    console.log('Deleted category result:', deleted);
-    if (!deleted) return res.status(404).json({ message: 'Category not found.' });
-    if (deleted.image) {
-      const imagePath = path.join(__dirname, '..', deleted.image);
-      console.log('Attempting to delete image at:', imagePath);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-        console.log('Image deleted successfully');
-      } else {
-        console.log('Image file not found, skipping');
-      }
-    }
-    res.json({ message: 'Category deleted.' });
-  } catch (err) {
-    console.error('Delete category error:', err);
-    res.status(500).json({ message: err.message });
-  }
-});
 
 export default router;
