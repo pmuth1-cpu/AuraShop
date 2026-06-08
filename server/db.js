@@ -2,24 +2,35 @@ import mongoose from 'mongoose';
 import { Product, Category, Admin } from './models/index.js';
 
 const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  console.warn('⚠️  MONGODB_URI not set. Database operations will fail.');
-}
+let isConnected = false;
 
 export async function connectDB() {
-  if (!MONGODB_URI) return;
+  if (isConnected) return;
+  if (!MONGODB_URI) {
+    console.warn('⚠️  MONGODB_URI not set. Retrying in 3s...');
+    await new Promise(r => setTimeout(r, 3000));
+    return connectDB();
+  }
   try {
     await mongoose.connect(MONGODB_URI);
+    isConnected = true;
     console.log('✅ MongoDB connected');
   } catch (err) {
     console.error('❌ MongoDB connection error:', err.message);
-    process.exit(1);
+    await new Promise(r => setTimeout(r, 3000));
+    return connectDB();
+  }
+}
+
+function ensureConnected() {
+  if (!isConnected) {
+    throw new Error('Database not connected. Request queued until connection is ready.');
   }
 }
 
 // PRODUCTS
-export function getAllProducts(filters = {}) {
+export async function getAllProducts(filters = {}) {
+  ensureConnected();
   let query = {};
   if (filters.category && filters.category !== 'all') query.category = filters.category;
   if (filters.search) query.name = { $regex: filters.search, $options: 'i' };
@@ -27,56 +38,67 @@ export function getAllProducts(filters = {}) {
   if (filters.minPrice !== undefined) query.price = { $gte: Number(filters.minPrice) };
   if (filters.maxPrice !== undefined) query.price = { ...query.price, $lte: Number(filters.maxPrice) };
   if (filters.excludeId) query._id = { $ne: filters.excludeId };
-
   return Product.find(query).sort({ createdAt: -1 }).lean();
 }
 
-export function getProductById(id) {
+export async function getProductById(id) {
+  ensureConnected();
   return Product.findById(id).lean();
 }
 
-export function createProduct(data) {
+export async function createProduct(data) {
+  ensureConnected();
   return Product.create(data);
 }
 
-export function updateProduct(id, data) {
+export async function updateProduct(id, data) {
+  ensureConnected();
   return Product.findByIdAndUpdate(id, data, { new: true }).lean();
 }
 
-export function deleteProduct(id) {
+export async function deleteProduct(id) {
+  ensureConnected();
   return Product.findByIdAndDelete(id).lean();
 }
 
 // CATEGORIES
-export function getCategories() {
+export async function getCategories() {
+  ensureConnected();
   return Category.find({}).sort({ createdAt: 1 }).lean();
 }
 
-export function getCategoryById(id) {
+export async function getCategoryById(id) {
+  ensureConnected();
   return Category.findById(id).lean();
 }
 
-export function createCategory(data) {
+export async function createCategory(data) {
+  ensureConnected();
   return Category.create(data);
 }
 
-export function updateCategory(id, data) {
+export async function updateCategory(id, data) {
+  ensureConnected();
   return Category.findByIdAndUpdate(id, data, { new: true }).lean();
 }
 
-export function deleteCategory(id) {
+export async function deleteCategory(id) {
+  ensureConnected();
   return Category.findByIdAndDelete(id).lean();
 }
 
 // ADMINS
-export function getAdminByUsername(username) {
+export async function getAdminByUsername(username) {
+  ensureConnected();
   return Admin.findOne({ username }).lean();
 }
 
-export function createAdmin(data) {
+export async function createAdmin(data) {
+  ensureConnected();
   return Admin.create(data);
 }
 
-export function adminExists() {
+export async function adminExists() {
+  ensureConnected();
   return Admin.countDocuments().then(c => c > 0);
 }
