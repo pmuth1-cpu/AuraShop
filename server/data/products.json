@@ -1,0 +1,15 @@
+[
+  {
+    "_id": "mq4r1cftnkqyq4r",
+    "name": "Curse Chaos",
+    "description": "the cursed boxi tee",
+    "price": 15,
+    "category": "Clothing",
+    "stock": 3,
+    "inStock": true,
+    "featured": true,
+    "image": "/uploads/1780895227931-779567693.png",
+    "createdAt": "2026-06-08T05:07:07.961Z",
+    "updatedAt": "2026-06-08T05:13:09.163Z"
+  }
+]
