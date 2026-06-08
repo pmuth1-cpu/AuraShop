@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
+import { connectDB } from './db.js';
 import bcrypt from 'bcryptjs';
 import Admin from './models/Admin.js';
 import Product from './models/Product.js';
 import Category from './models/Category.js';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/aurashop';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 const sampleProducts = [
   { name: 'Midnight Noir Hoodie', description: 'Premium cotton blend hoodie with a minimal embossed logo. Features a relaxed fit, kangaroo pocket, and ultra-soft brushed interior.', price: 89.99, category: 'Hoodies', stock: 25, inStock: true, featured: true },
@@ -17,34 +18,47 @@ const sampleProducts = [
   { name: 'Dusk Joggers', description: 'Tapered joggers in tech-fleece fabric with zippered pockets and elastic cuffs.', price: 79.99, category: 'Pants', stock: 45, inStock: true, featured: false },
 ];
 
+const sampleCategories = [
+  { name: 'Clothing' },
+  { name: 'Footwear' },
+  { name: 'Accessories' },
+  { name: 'Outerwear' },
+  { name: 'Pants' },
+  { name: 'T-Shirts' },
+  { name: 'Hoodies' },
+];
+
 async function seed() {
-  await mongoose.connect(MONGODB_URI);
-  
-  const adminCount = await Admin.countDocuments();
-  if (adminCount > 0) {
-    console.log('⚠️  Database already seeded. Delete to re-seed.');
+  if (!MONGODB_URI) {
+    console.log('⚠️  MONGODB_URI not set. Skipping seed.');
     process.exit(0);
   }
 
-  // Create admin
-  const hashedPassword = await bcrypt.hash('kdmvtrovteroyban', 12);
-  await Admin.create({ username: '@aurashop369', password: hashedPassword });
-  console.log('👤 Admin created — username: @aurashop369 / password: kdmvtrovteroyban');
+  await connectDB();
 
-  // Create categories from products
-  const categories = [...new Set(sampleProducts.map(p => p.category))];
-  await Category.insertMany(categories.map(name => ({ name })));
-  console.log(`📁 ${categories.length} categories created`);
+  const adminCount = await Admin.countDocuments();
+  if (adminCount > 0) {
+    console.log('⚠️  Database already seeded. Delete collections to re-seed.');
+    await mongoose.disconnect();
+    process.exit(0);
+  }
 
-  // Create products
+  const hashedPassword = await bcrypt.hash('admin123', 12);
+  await Admin.create({ username: 'admin', password: hashedPassword });
+  console.log('👤 Admin created — username: admin / password: admin123');
+
+  await Category.insertMany(sampleCategories);
+  console.log(`📁 ${sampleCategories.length} categories created`);
+
   await Product.insertMany(sampleProducts);
   console.log(`📦 ${sampleProducts.length} products created`);
 
   console.log('\n🎉 Seed complete!');
+  await mongoose.disconnect();
   process.exit(0);
 }
 
 seed().catch(err => {
-  console.error(err);
+  console.error('Seeding failed:', err);
   process.exit(1);
 });

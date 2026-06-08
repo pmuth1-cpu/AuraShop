@@ -11,13 +11,11 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Multer config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
@@ -38,38 +36,37 @@ const upload = multer({
   },
 });
 
-// ===== PUBLIC =====
-
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const products = getAllProducts(req.query);
+    const products = await getAllProducts(req.query);
     res.json(products);
   } catch (error) {
+    console.error('Get products error:', error);
     res.status(500).json({ message: 'Server error.', error: error.message });
   }
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const product = getProductById(req.params.id);
+    const product = await getProductById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found.' });
     res.json(product);
   } catch (error) {
+    console.error('Get product error:', error);
     res.status(500).json({ message: 'Server error.', error: error.message });
   }
 });
 
-// ===== ADMIN (Protected) =====
-
-router.post('/', verifyToken, upload.single('image'), (req, res) => {
+router.post('/', verifyToken, upload.single('image'), async (req, res) => {
   try {
-    console.log('Create product - body:', req.body);
-    console.log('Create product - file:', req.file ? { filename: req.file.filename, size: req.file.size } : null);
-    const product = createProduct({
+    const product = await createProduct({
       ...req.body,
-      image: req.file ? `/uploads/${req.file.filename}` : '',
+      price: Number(req.body.price),
+      stock: Number(req.body.stock) || 0,
+      inStock: req.body.inStock === 'true' || req.body.inStock === true,
+      featured: req.body.featured === 'true' || req.body.featured === true,
+      image: req.file ? `/uploads/${req.file.filename}` : (req.body.image || ''),
     });
-    console.log('Product created:', product._id);
     res.status(201).json(product);
   } catch (error) {
     console.error('Create product error:', error);
@@ -77,14 +74,17 @@ router.post('/', verifyToken, upload.single('image'), (req, res) => {
   }
 });
 
-router.put('/:id', verifyToken, upload.single('image'), (req, res) => {
+router.put('/:id', verifyToken, upload.single('image'), async (req, res) => {
   try {
-    console.log('Update product - id:', req.params.id, 'body:', req.body);
     const data = { ...req.body };
+    if (data.price !== undefined) data.price = Number(data.price);
+    if (data.stock !== undefined) data.stock = Number(data.stock) || 0;
+    if (data.inStock !== undefined) data.inStock = data.inStock === 'true' || data.inStock === true;
+    if (data.featured !== undefined) data.featured = data.featured === 'true' || data.featured === true;
     if (req.file) data.image = `/uploads/${req.file.filename}`;
-    const product = updateProduct(req.params.id, data);
+
+    const product = await updateProduct(req.params.id, data);
     if (!product) return res.status(404).json({ message: 'Product not found.' });
-    console.log('Product updated:', product._id);
     res.json(product);
   } catch (error) {
     console.error('Update product error:', error);
@@ -92,23 +92,15 @@ router.put('/:id', verifyToken, upload.single('image'), (req, res) => {
   }
 });
 
-router.delete('/:id', verifyToken, (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('Delete product request for id:', id);
-    const deleted = deleteProduct(id);
-    console.log('Deleted product result:', deleted);
+    const deleted = await deleteProduct(id);
     if (!deleted) return res.status(404).json({ message: 'Product not found.' });
 
     if (deleted.image) {
       const imagePath = path.join(__dirname, '..', deleted.image);
-      console.log('Attempting to delete image at:', imagePath);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-        console.log('Image deleted successfully');
-      } else {
-        console.log('Image file not found, skipping');
-      }
+      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
     }
 
     res.json({ message: 'Product deleted successfully.' });

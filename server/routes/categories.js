@@ -34,28 +34,33 @@ const upload = multer({
   },
 });
 
-router.get('/', (req, res) => {
-  try { res.json(getCategories()); } 
-  catch (err) { res.status(500).json({ message: err.message }); }
+router.get('/', async (req, res) => {
+  try {
+    const categories = await getCategories();
+    res.json(categories);
+  } catch (err) {
+    console.error('Get categories error:', err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const cat = getCategoryById(req.params.id);
+    const cat = await getCategoryById(req.params.id);
     if (!cat) return res.status(404).json({ message: 'Category not found.' });
     res.json(cat);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    console.error('Get category error:', err);
+    res.status(500).json({ message: err.message });
+  }
 });
 
-router.post('/', verifyToken, upload.single('image'), (req, res) => {
+router.post('/', verifyToken, upload.single('image'), async (req, res) => {
   try {
-    console.log('Create category - body:', req.body);
-    console.log('Create category - file:', req.file ? { filename: req.file.filename, size: req.file.size } : null);
-    const cat = createCategory({
-      ...req.body,
-      image: req.file ? `/uploads/${req.file.filename}` : '',
+    const cat = await createCategory({
+      name: req.body.name,
+      image: req.file ? `/uploads/${req.file.filename}` : (req.body.image || ''),
     });
-    console.log('Category created:', cat._id);
     res.status(201).json(cat);
   } catch (err) {
     console.error('Create category error:', err);
@@ -63,14 +68,12 @@ router.post('/', verifyToken, upload.single('image'), (req, res) => {
   }
 });
 
-router.put('/:id', verifyToken, upload.single('image'), (req, res) => {
+router.put('/:id', verifyToken, upload.single('image'), async (req, res) => {
   try {
-    console.log('Update category - id:', req.params.id, 'body:', req.body);
-    const data = { ...req.body };
+    const data = { name: req.body.name };
     if (req.file) data.image = `/uploads/${req.file.filename}`;
-    const cat = updateCategory(req.params.id, data);
+    const cat = await updateCategory(req.params.id, data);
     if (!cat) return res.status(404).json({ message: 'Category not found.' });
-    console.log('Category updated:', cat._id);
     res.json(cat);
   } catch (err) {
     console.error('Update category error:', err);
@@ -78,22 +81,13 @@ router.put('/:id', verifyToken, upload.single('image'), (req, res) => {
   }
 });
 
-router.delete('/:id', verifyToken, (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    console.log('Delete category request for id:', id);
-    const deleted = deleteCategory(id);
-    console.log('Deleted category result:', deleted);
+    const deleted = await deleteCategory(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'Category not found.' });
     if (deleted.image) {
       const imagePath = path.join(__dirname, '..', deleted.image);
-      console.log('Attempting to delete image at:', imagePath);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-        console.log('Image deleted successfully');
-      } else {
-        console.log('Image file not found, skipping');
-      }
+      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
     }
     res.json({ message: 'Category deleted.' });
   } catch (err) {
