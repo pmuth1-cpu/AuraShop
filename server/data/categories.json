@@ -1,8 +1,10 @@
 [
-  {
-    "_id": "cat_clothing",
-    "name": "Clothing",
-    "image": "/uploads/1780895227931-779567693.png",
-    "createdAt": "2026-06-08T02:34:27.630Z"
-  }
+  { "_id": "cat_clothing", "name": "Clothing", "image": "/uploads/1780895227931-779567693.png", "createdAt": "2026-06-08T02:34:27.630Z" },
+  { "_id": "cat_footwear", "name": "Footwear", "image": "", "createdAt": "2026-06-08T02:34:27.630Z" },
+  { "_id": "cat_accessories", "name": "Accessories", "image": "", "createdAt": "2026-06-08T02:34:27.630Z" },
+  { "_id": "cat_outerwear", "name": "Outerwear", "image": "", "createdAt": "2026-06-08T02:34:27.630Z" },
+  { "_id": "cat_pants", "name": "Pants", "image": "", "createdAt": "2026-06-08T02:34:27.630Z" },
+  { "_id": "cat_tshirts", "name": "T-Shirts", "image": "", "createdAt": "2026-06-08T02:34:27.630Z" },
+  { "_id": "cat_hoodies", "name": "Hoodies", "image": "", "createdAt": "2026-06-08T02:34:27.630Z" }
 ]
+
