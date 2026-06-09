@@ -26,6 +26,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 
+// Multer error handler
+app.use((err, req, res, next) => {
+  if (err.message === 'Only image files are allowed.') {
+    return res.status(400).json({ message: err.message });
+  }
+  next(err);
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
