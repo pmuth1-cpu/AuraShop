@@ -6,8 +6,14 @@ import { useState } from 'react';
 const TELEGRAM_USERNAME = 'aurashop369';
 
 export default function CartSidebar() {
-  const { items, isOpen, setIsOpen, updateQuantity, removeItem, clearCart, totalPrice, checkoutViaTelegram, showReceipt, closeReceipt, customerInfo, updateCustomerInfo, CAMBODIA_LOCATIONS } = useCart();
+  const { items, isOpen, setIsOpen, updateQuantity, removeItem, clearCart, transportCost, setTransportCost, grandTotal, checkoutViaTelegram, showReceipt, closeReceipt, customerInfo, updateCustomerInfo, CAMBODIA_LOCATIONS } = useCart();
   const [localInfo, setLocalInfo] = useState({ phone: '', province: '', district: '', commune: '', village: '' });
+  const [localTransport, setLocalTransport] = useState(() => {
+    try {
+      const saved = localStorage.getItem('aura_local_transport');
+      return saved ? Number(saved) || 0 : 0;
+    } catch { return 0; }
+  });
 
   if (!isOpen && !showReceipt) return null;
 
@@ -27,34 +33,29 @@ export default function CartSidebar() {
               <div className="cart-receipt-content">
                 <pre className="receipt-ascii">
 {`╔════════════════╗
-    AURA  SHOP
-  Order  Confirm
+                AURA  SHOP
+             Order  Confirm
 ╚════════════════╝`}
                 </pre>
-                {(customerInfo?.phone || customerInfo?.province || customerInfo?.district || customerInfo?.commune || customerInfo?.village) && (
-                  <>
-                    <pre className="receipt-label">📍 Delivery Info</pre>
-                    <pre className="receipt-content">
-{customerInfo?.phone ? `  Phone: ${customerInfo.phone}` : ''}
-{customerInfo?.province ? `  Province: ${customerInfo.province}` : ''}
-{customerInfo?.district ? `  District: ${customerInfo.district}` : ''}
-{customerInfo?.commune ? `  Commune: ${customerInfo.commune}` : ''}
-{customerInfo?.village ? `  Village: ${customerInfo.village}` : ''}
-                    </pre>
-                  </>
+                {customerInfo?.phone && <pre className="receipt-label">Phone number: {customerInfo.phone}</pre>}
+                {[customerInfo?.province, customerInfo?.district, customerInfo?.commune, customerInfo?.village].filter(Boolean).length > 0 && (
+                  <pre className="receipt-label">Location: {[customerInfo?.province, customerInfo?.district, customerInfo?.commune, customerInfo?.village].filter(Boolean).join(', ')}</pre>
                 )}
-                <pre className="receipt-label">📦 ORDER SUMMARY</pre>
+                <pre className="receipt-label">Cart summary</pre>
                 <div className="receipt-items">
-                  {items.map((item) => (
+                  {items.map((item, idx) => (
                     <div key={item._id} className="receipt-item">
-                      <pre className="receipt-item-name">  {item.name}</pre>
-                      <pre className="receipt-item-detail">    Qty: {item.quantity}  Unit: ${item.price.toFixed(2)}</pre>
+                      <pre className="receipt-item-name">{idx + 1}.{item.name}</pre>
+                      <pre className="receipt-item-detail">   Qty: {item.quantity} x ${item.price.toFixed(2)} = ${(item.quantity * item.price).toFixed(2)}</pre>
                     </div>
                   ))}
                 </div>
                 <div className="receipt-divider" />
-                <pre className="receipt-total-row">  💰 Total: ${totalPrice.toFixed(2)}</pre>
-                <pre className="receipt-thanks">🙏 Thank you for your order!</pre>
+                <pre className="receipt-label">transport cost: {transportCost.toFixed(2)}</pre>
+                <pre className="receipt-total-row">__________________</pre>
+                <pre className="receipt-total-row">total: {grandTotal.toFixed(2)}</pre>
+                <pre className="receipt-total-row">__________________</pre>
+                <pre className="receipt-thanks">Please confirm my order! Thank you!</pre>
               </div>
             </div>
           </div>
@@ -109,7 +110,7 @@ export default function CartSidebar() {
           <div className="cart-footer">
             <div className="cart-total">
               <span>Total</span>
-              <span>${totalPrice.toFixed(2)}</span>
+              <span>${grandTotal.toFixed(2)}</span>
             </div>
             <div className="customer-info-form">
               <div className="form-group">
@@ -155,9 +156,25 @@ export default function CartSidebar() {
                    onChange={(e) => setLocalInfo({...localInfo, village: e.target.value})}
                  />
                </div>
+               <div className="form-group" style={{ marginTop: '12px' }}>
+                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', display: 'block' }}>Transport Cost ($)</label>
+                 <input
+                   type="number"
+                   min="0"
+                   step="0.01"
+                   value={localTransport}
+                   onChange={(e) => {
+                     const val = Math.max(0, Number(e.target.value) || 0);
+                     setLocalTransport(val);
+                     setTransportCost(val);
+                   }}
+                   style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)' }}
+                 />
+               </div>
             </div>
             <button className="btn btn-primary" onClick={() => {
               updateCustomerInfo(localInfo);
+              setTransportCost(localTransport);
               checkoutViaTelegram(TELEGRAM_USERNAME);
             }} id="checkout-telegram">
               <SiTelegram size={18} /> Checkout via Telegram

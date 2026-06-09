@@ -46,6 +46,7 @@ export function CartProvider({ children }) {
       return saved ? JSON.parse(saved) : { phone: '', province: '', district: '', commune: '', village: '' };
     } catch { return { phone: '', province: '', district: '', commune: '', village: '' }; }
   });
+  const [transportCost, setTransportCost] = useState(() => Number(localStorage.getItem('aura_transport_cost')) || 0);
 
   useEffect(() => {
     localStorage.setItem('aura_cart', JSON.stringify(items));
@@ -54,6 +55,10 @@ export function CartProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('aura_customer_info', JSON.stringify(customerInfo));
   }, [customerInfo]);
+
+  useEffect(() => {
+    localStorage.setItem('aura_transport_cost', transportCost);
+  }, [transportCost]);
 
   const addItem = (product, qty = 1) => {
     setItems(prev => {
@@ -79,33 +84,40 @@ export function CartProvider({ children }) {
   const clearCart = () => {
     setItems([]);
     setCustomerInfo({ phone: '', province: '', district: '', commune: '', village: '' });
+    setTransportCost(0);
   };
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
-  const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const transportCostVal = Number(transportCost || 0);
+  const grandTotal = subtotal + transportCostVal;
 
   const generateReceipt = () => {
     let receipt = '';
     receipt += '╔════════════════╗\n';
-    receipt += '    AURA  SHOP\n';
-    receipt += '  Order  Confirm\n';
-    receipt += '╚════════════════╝\n\n';
-    if (customerInfo.phone || customerInfo.province || customerInfo.district || customerInfo.commune || customerInfo.village) {
-      receipt += '📍 Delivery Info\n';
-      if (customerInfo.phone) receipt += `  Phone: ${customerInfo.phone}\n`;
-      if (customerInfo.province) receipt += `  Province: ${customerInfo.province}\n`;
-      if (customerInfo.district) receipt += `  District: ${customerInfo.district}\n`;
-      if (customerInfo.commune) receipt += `  Commune: ${customerInfo.commune}\n`;
-      if (customerInfo.village) receipt += `  Village: ${customerInfo.village}\n`;
-      receipt += '\n';
+    receipt += '                AURA  SHOP\n';
+    receipt += '             Order  Confirm\n';
+    receipt += '╚════════════════╝\n';
+    if (customerInfo.phone) {
+      const phone = String(customerInfo.phone || '').replace(/undefined|null/g, '').trim();
+      if (phone) receipt += `Phone number: ${phone}\n`;
     }
-    receipt += '📦 ORDER SUMMARY\n';
-    items.forEach((item) => {
-      receipt += `  ${item.name}\n`;
-      receipt += `    Qty: ${item.quantity}  Unit: $${item.price.toFixed(2)}\n`;
+    const location = [customerInfo.province, customerInfo.district, customerInfo.commune, customerInfo.village].filter(Boolean).map(v => String(v).replace(/undefined|null/g, '').trim()).filter(Boolean).join(', ');
+    if (location) receipt += `Location: ${location}\n`;
+    receipt += '\nCart summary\n';
+    items.forEach((item, idx) => {
+      const name = String(item.name || '').replace(/undefined|null/g, '').trim();
+      const qty = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      const lineTotal = qty * price;
+      receipt += `${idx + 1}.${name}\n`;
+      receipt += `   Qty: ${qty} x $${price.toFixed(2)} = $${lineTotal.toFixed(2)}\n`;
     });
-    receipt += `\n  💰 Total: $${totalPrice.toFixed(2)}\n`;
-    receipt += '🙏 Thank you for your order!';
+    receipt += `transport cost: ${transportCostVal.toFixed(2)}\n`;
+    receipt += '__________________\n';
+    receipt += `total: ${grandTotal.toFixed(2)}\n`;
+    receipt += '__________________\n';
+    receipt += 'Please confirm my order! Thank you!';
     return receipt;
   };
 
@@ -126,7 +138,7 @@ export function CartProvider({ children }) {
   };
 
   return (
-    <CartContext.Provider value={{ items, isOpen, setIsOpen, addItem, updateQuantity, removeItem, clearCart, totalItems, totalPrice, checkoutViaTelegram, showReceipt, closeReceipt, customerInfo, updateCustomerInfo, CAMBODIA_LOCATIONS }}>
+    <CartContext.Provider value={{ items, isOpen, setIsOpen, addItem, updateQuantity, removeItem, clearCart, totalItems, subtotal, transportCost: transportCostVal, setTransportCost, grandTotal, checkoutViaTelegram, showReceipt, closeReceipt, customerInfo, updateCustomerInfo, CAMBODIA_LOCATIONS }}>
       {children}
     </CartContext.Provider>
   );
