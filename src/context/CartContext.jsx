@@ -43,11 +43,19 @@ export function CartProvider({ children }) {
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   const generateTelegramMessage = () => {
-    let msg = '🛒 *New Order from Aura Shop*\n\n';
+    let msg = '╔═══════════════ Aura Shop ═══════════════╗\n' +
+              '            Order Confirmation\n' +
+              '╚═══════════════╝\n\n' +
+              '📦 Order Summary\n\n';
     items.forEach((item, idx) => {
-      msg += `${idx + 1}. ${item.name}\n   Qty: ${item.quantity} × $${item.price.toFixed(2)} = $${(item.price * item.quantity).toFixed(2)}\n\n`;
+      msg += `▸ ${item.name}\n` +
+             `  Quantity: ${item.quantity}\n` +
+             `  Unit Price: $${item.price.toFixed(2)}\n\n`;
     });
-    msg += `━━━━━━━━━━━━━━━\n💰 *Total: $${totalPrice.toFixed(2)}*\n\nPlease confirm my order. Thank you!`;
+    msg += '──────────────────────\n' +
+           `💰 Total Amount: $${totalPrice.toFixed(2)}\n` +
+           '──────────────────────\n\n' +
+           'Thank you for your order!';
     return msg;
   };
 
