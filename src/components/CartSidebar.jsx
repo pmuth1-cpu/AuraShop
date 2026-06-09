@@ -7,7 +7,7 @@ const TELEGRAM_USERNAME = 'aurashop369';
 
 export default function CartSidebar() {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, clearCart, totalPrice, checkoutViaTelegram, showReceipt, closeReceipt, customerInfo, updateCustomerInfo, CAMBODIA_LOCATIONS } = useCart();
-  const [localInfo, setLocalInfo] = useState({ phone: '', province: '', district: '' });
+  const [localInfo, setLocalInfo] = useState({ phone: '', province: '', district: '', commune: '', village: '' });
 
   if (!isOpen && !showReceipt) return null;
 
@@ -141,11 +141,25 @@ export default function CartSidebar() {
                   disabled={!localInfo.province}
                 >
                   <option value="">District (optional)</option>
-                  {localInfo.province && CAMBODIA_LOCATIONS[localInfo.province]?.map(district => (
-                    <option key={district} value={district}>{district}</option>
-                  ))}
+                   {localInfo.province && CAMBODIA_LOCATIONS[localInfo.province]?.map(district => (
+                     <option key={district} value={district}>{district}</option>
+                   ))}
                 </select>
               </div>
+              <div className="form-row">
+                 <input
+                   type="text"
+                   placeholder="Commune/Sangkat (optional)"
+                   value={localInfo.commune}
+                   onChange={(e) => setLocalInfo({...localInfo, commune: e.target.value})}
+                 />
+                 <input
+                   type="text"
+                   placeholder="Village (optional)"
+                   value={localInfo.village}
+                   onChange={(e) => setLocalInfo({...localInfo, village: e.target.value})}
+                 />
+               </div>
             </div>
             <button className="btn btn-primary" onClick={() => {
               updateCustomerInfo(localInfo);

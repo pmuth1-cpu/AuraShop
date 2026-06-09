@@ -43,8 +43,8 @@ export function CartProvider({ children }) {
   const [customerInfo, setCustomerInfo] = useState(() => {
     try {
       const saved = localStorage.getItem('aura_customer_info');
-      return saved ? JSON.parse(saved) : { phone: '', province: '', district: '' };
-    } catch { return { phone: '', province: '', district: '' }; }
+      return saved ? JSON.parse(saved) : { phone: '', province: '', district: '', commune: '', village: '' };
+    } catch { return { phone: '', province: '', district: '', commune: '', village: '' }; }
   });
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export function CartProvider({ children }) {
 
   const clearCart = () => {
     setItems([]);
-    setCustomerInfo({ phone: '', province: '', district: '' });
+    setCustomerInfo({ phone: '', province: '', district: '', commune: '', village: '' });
   };
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -86,16 +86,19 @@ export function CartProvider({ children }) {
 
   const generateReceipt = () => {
     let receipt = '🛒 AURA SHOP ORDER\n\n';
+    if (customerInfo.phone || customerInfo.province) {
+      receipt += '📍 Delivery Info:\n';
+      if (customerInfo.phone) receipt += `Phone: ${customerInfo.phone}\n`;
+      if (customerInfo.province) receipt += `Province: ${customerInfo.province}\n`;
+      if (customerInfo.district) receipt += `District: ${customerInfo.district}\n`;
+      if (customerInfo.commune) receipt += `Commune/Sangkat: ${customerInfo.commune}\n`;
+      if (customerInfo.village) receipt += `Village: ${customerInfo.village}\n`;
+      receipt += '\n';
+    }
     items.forEach((item) => {
       receipt += `${item.name} x${item.quantity} — $${(item.price * item.quantity).toFixed(2)}\n`;
     });
     receipt += `\n💰 Total: $${totalPrice.toFixed(2)}\n`;
-    if (customerInfo.phone || customerInfo.province) {
-      receipt += '\n📍 Delivery Info:\n';
-      if (customerInfo.phone) receipt += `Phone: ${customerInfo.phone}\n`;
-      if (customerInfo.province) receipt += `Province: ${customerInfo.province}\n`;
-      if (customerInfo.district) receipt += `District: ${customerInfo.district}\n`;
-    }
     return receipt;
   };
 
