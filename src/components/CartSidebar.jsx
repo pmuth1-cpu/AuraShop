@@ -26,42 +26,35 @@ export default function CartSidebar() {
             <div className="cart-receipt-border">
               <div className="cart-receipt-content">
                 <pre className="receipt-ascii">
-                  {`╔════════════════╗
+{`╔════════════════╗
     AURA  SHOP
   Order  Confirm
 ╚════════════════╝`}
                 </pre>
-                <div className="receipt-divider" />
-                {(customerInfo?.phone || customerInfo?.province || customerInfo?.district || customerInfo?.commune || customerInfo?.village) ? (
+                {(customerInfo?.phone || customerInfo?.province || customerInfo?.district || customerInfo?.commune || customerInfo?.village) && (
                   <>
                     <pre className="receipt-label">📍 Delivery Info</pre>
-                    <div className="receipt-items">
-                      {customerInfo?.phone && <div className="receipt-item"><span className="receipt-item-detail">Phone: {customerInfo.phone}</span></div>}
-                      {customerInfo?.province && <div className="receipt-item"><span className="receipt-item-detail">Province: {customerInfo.province}</span></div>}
-                      {customerInfo?.district && <div className="receipt-item"><span className="receipt-item-detail">District: {customerInfo.district}</span></div>}
-                      {customerInfo?.commune && <div className="receipt-item"><span className="receipt-item-detail">Commune: {customerInfo.commune}</span></div>}
-                      {customerInfo?.village && <div className="receipt-item"><span className="receipt-item-detail">Village: {customerInfo.village}</span></div>}
-                    </div>
-                    <div className="receipt-divider" />
+                    <pre className="receipt-content">
+{customerInfo?.phone ? `  Phone: ${customerInfo.phone}` : ''}
+{customerInfo?.province ? `  Province: ${customerInfo.province}` : ''}
+{customerInfo?.district ? `  District: ${customerInfo.district}` : ''}
+{customerInfo?.commune ? `  Commune: ${customerInfo.commune}` : ''}
+{customerInfo?.village ? `  Village: ${customerInfo.village}` : ''}
+                    </pre>
                   </>
-                ) : null}
+                )}
                 <pre className="receipt-label">📦 ORDER SUMMARY</pre>
                 <div className="receipt-items">
                   {items.map((item) => (
                     <div key={item._id} className="receipt-item">
-                      <span className="receipt-item-name">▸ {item.name}</span>
-                      <span className="receipt-item-detail">Quantity: {item.quantity}</span>
-                      <span className="receipt-item-detail">Unit Price: ${item.price.toFixed(2)}</span>
+                      <pre className="receipt-item-name">  {item.name}</pre>
+                      <pre className="receipt-item-detail">    Qty: {item.quantity}  Unit: ${item.price.toFixed(2)}</pre>
                     </div>
                   ))}
                 </div>
                 <div className="receipt-divider" />
-                <div className="receipt-total-row">
-                  <span>💰 Total:</span>
-                  <span>${totalPrice.toFixed(2)}</span>
-                </div>
-                <div className="receipt-divider" />
-                <pre className="receipt-thanks">Thank you for your order!</pre>
+                <pre className="receipt-total-row">  💰 Total: ${totalPrice.toFixed(2)}</pre>
+                <pre className="receipt-thanks">🙏 Thank you for your order!</pre>
               </div>
             </div>
           </div>
