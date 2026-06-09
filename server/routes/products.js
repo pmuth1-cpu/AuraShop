@@ -1,36 +1,18 @@
 import express from 'express';
 import multer from 'multer';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+import { uploadToCloudinary } from '../uploads.js';
 import { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct } from '../db.js';
 import { verifyToken } from '../middleware/auth.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const router = express.Router();
 
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|gif|webp/;
-    const ext = allowed.test(path.extname(file.originalname).toLowerCase().replace('.', ''));
-    const mime = allowed.test(file.mimetype.toLowerCase().replace('image/', '').split('+')[0]);
+    const ext = allowed.test(file.originalname.toLowerCase().split('.').pop());
+    const mime = allowed.test(file.mimetype.replace('image/', '').split('+')[0]);
     if (ext && mime) return cb(null, true);
     cb(new Error('Only image files are allowed.'));
   },
@@ -59,13 +41,17 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', verifyToken, upload.single('image'), async (req, res) => {
   try {
+    let imageUrl = req.body.image || '';
+    if (req.file) {
+      imageUrl = await uploadToCloudinary(req.file.buffer, 'products');
+    }
     const product = await createProduct({
       ...req.body,
       price: Number(req.body.price),
       stock: Number(req.body.stock) || 0,
       inStock: req.body.inStock === 'true' || req.body.inStock === true,
       featured: req.body.featured === 'true' || req.body.featured === true,
-      image: req.file ? `/uploads/${req.file.filename}` : (req.body.image || ''),
+      image: imageUrl,
     });
     res.status(201).json(product);
   } catch (error) {
@@ -81,7 +67,9 @@ router.put('/:id', verifyToken, upload.single('image'), async (req, res) => {
     if (data.stock !== undefined) data.stock = Number(data.stock) || 0;
     if (data.inStock !== undefined) data.inStock = data.inStock === 'true' || data.inStock === true;
     if (data.featured !== undefined) data.featured = data.featured === 'true' || data.featured === true;
-    if (req.file) data.image = `/uploads/${req.file.filename}`;
+    if (req.file) {
+      data.image = await uploadToCloudinary(req.file.buffer, 'products');
+    }
 
     const product = await updateProduct(req.params.id, data);
     if (!product) return res.status(404).json({ message: 'Product not found.' });
@@ -97,12 +85,6 @@ router.delete('/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
     const deleted = await deleteProduct(id);
     if (!deleted) return res.status(404).json({ message: 'Product not found.' });
-
-    if (deleted.image) {
-      const imagePath = path.join(__dirname, '..', deleted.image);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
-    }
-
     res.json({ message: 'Product deleted successfully.' });
   } catch (error) {
     console.error('Delete product error:', error);
