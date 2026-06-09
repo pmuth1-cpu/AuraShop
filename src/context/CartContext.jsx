@@ -85,20 +85,25 @@ export function CartProvider({ children }) {
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   const generateReceipt = () => {
-    let receipt = '🛒 AURA SHOP ORDER\n\n';
-    if (customerInfo.phone || customerInfo.province) {
+    let receipt = '🛒 AURA SHOP ORDER\n';
+    receipt += '━━━━━━━━━━━━━━━━━━━━━━\n\n';
+    if (customerInfo.phone || customerInfo.province || customerInfo.commune) {
       receipt += '📍 Delivery Info:\n';
-      if (customerInfo.phone) receipt += `Phone: ${customerInfo.phone}\n`;
-      if (customerInfo.province) receipt += `Province: ${customerInfo.province}\n`;
-      if (customerInfo.district) receipt += `District: ${customerInfo.district}\n`;
-      if (customerInfo.commune) receipt += `Commune/Sangkat: ${customerInfo.commune}\n`;
-      if (customerInfo.village) receipt += `Village: ${customerInfo.village}\n`;
+      if (customerInfo.phone) receipt += `  Phone: ${customerInfo.phone}\n`;
+      if (customerInfo.province) receipt += `  Province: ${customerInfo.province}\n`;
+      if (customerInfo.district) receipt += `  District: ${customerInfo.district}\n`;
+      if (customerInfo.commune) receipt += `  Commune: ${customerInfo.commune}\n`;
+      if (customerInfo.village) receipt += `  Village: ${customerInfo.village}\n`;
       receipt += '\n';
     }
+    receipt += '📦 Items:\n';
     items.forEach((item) => {
-      receipt += `${item.name} x${item.quantity} — $${(item.price * item.quantity).toFixed(2)}\n`;
+      receipt += `  • ${item.name} x${item.quantity} — $${(item.price * item.quantity).toFixed(2)}\n`;
     });
-    receipt += `\n💰 Total: $${totalPrice.toFixed(2)}\n`;
+    receipt += '\n━━━━━━━━━━━━━━━━━━━━━━\n';
+    receipt += `💰 Total: $${totalPrice.toFixed(2)}\n`;
+    receipt += '━━━━━━━━━━━━━━━━━━━━━━\n';
+    receipt += '🙏 Thank you for your order!';
     return receipt;
   };
 
