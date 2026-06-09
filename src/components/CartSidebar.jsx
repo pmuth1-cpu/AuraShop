@@ -1,11 +1,13 @@
 import { HiX, HiMinus, HiPlus, HiTrash, HiOutlineShoppingBag, HiCheckCircle } from 'react-icons/hi';
 import { SiTelegram } from 'react-icons/si';
 import { useCart } from '../context/CartContext';
+import { useState } from 'react';
 
 const TELEGRAM_USERNAME = 'aurashop369';
 
 export default function CartSidebar() {
-  const { items, isOpen, setIsOpen, updateQuantity, removeItem, clearCart, totalPrice, checkoutViaTelegram, showReceipt, closeReceipt } = useCart();
+  const { items, isOpen, setIsOpen, updateQuantity, removeItem, clearCart, totalPrice, checkoutViaTelegram, showReceipt, closeReceipt, customerInfo, updateCustomerInfo, CAMBODIA_LOCATIONS } = useCart();
+  const [localInfo, setLocalInfo] = useState({ phone: '', province: '', district: '' });
 
   if (!isOpen && !showReceipt) return null;
 
@@ -24,12 +26,23 @@ export default function CartSidebar() {
             <div className="cart-receipt-border">
               <div className="cart-receipt-content">
                 <pre className="receipt-ascii">
-                  {`╔══════════════════╗
-      AURA SHOP
-   Order Confirmation
-╚══════════════════╝`}
+                  {`╔════════════════╗
+    AURA  SHOP
+  Order  Confirm
+╚════════════════╝`}
                 </pre>
                 <div className="receipt-divider" />
+                {customerInfo?.phone || customerInfo?.province ? (
+                  <>
+                    <pre className="receipt-label">📍 Delivery Info</pre>
+                    <div className="receipt-items">
+                      {customerInfo?.phone && <div className="receipt-item"><span className="receipt-item-detail">Phone: {customerInfo.phone}</span></div>}
+                      {customerInfo?.province && <div className="receipt-item"><span className="receipt-item-detail">Province: {customerInfo.province}</span></div>}
+                      {customerInfo?.district && <div className="receipt-item"><span className="receipt-item-detail">District: {customerInfo.district}</span></div>}
+                    </div>
+                    <div className="receipt-divider" />
+                  </>
+                ) : null}
                 <pre className="receipt-label">📦 ORDER SUMMARY</pre>
                 <div className="receipt-items">
                   {items.map((item) => (
@@ -103,7 +116,41 @@ export default function CartSidebar() {
               <span>Total</span>
               <span>${totalPrice.toFixed(2)}</span>
             </div>
-            <button className="btn btn-primary" onClick={() => checkoutViaTelegram(TELEGRAM_USERNAME)} id="checkout-telegram">
+            <div className="customer-info-form">
+              <div className="form-group">
+                <input
+                  type="tel"
+                  placeholder="Phone number (optional)"
+                  value={localInfo.phone}
+                  onChange={(e) => setLocalInfo({...localInfo, phone: e.target.value})}
+                />
+              </div>
+              <div className="form-row">
+                <select
+                  value={localInfo.province}
+                  onChange={(e) => setLocalInfo({...localInfo, province: e.target.value, district: ''})}
+                >
+                  <option value="">Province (optional)</option>
+                  {Object.keys(CAMBODIA_LOCATIONS).map(province => (
+                    <option key={province} value={province}>{province}</option>
+                  ))}
+                </select>
+                <select
+                  value={localInfo.district}
+                  onChange={(e) => setLocalInfo({...localInfo, district: e.target.value})}
+                  disabled={!localInfo.province}
+                >
+                  <option value="">District (optional)</option>
+                  {localInfo.province && CAMBODIA_LOCATIONS[localInfo.province]?.map(district => (
+                    <option key={district} value={district}>{district}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button className="btn btn-primary" onClick={() => {
+              updateCustomerInfo(localInfo);
+              checkoutViaTelegram(TELEGRAM_USERNAME);
+            }} id="checkout-telegram">
               <SiTelegram size={18} /> Checkout via Telegram
             </button>
           </div>
