@@ -32,21 +32,13 @@ export default function CartSidebar() {
 ╚════════════════╝`}
                 </pre>
                 <div className="receipt-divider" />
-                {customerInfo?.phone || customerInfo?.province ? (
+                {(customerInfo?.phone || customerInfo?.province || customerInfo?.district || customerInfo?.commune || customerInfo?.village) ? (
                   <>
                     <pre className="receipt-label">📍 Delivery Info</pre>
                     <div className="receipt-items">
                       {customerInfo?.phone && <div className="receipt-item"><span className="receipt-item-detail">Phone: {customerInfo.phone}</span></div>}
                       {customerInfo?.province && <div className="receipt-item"><span className="receipt-item-detail">Province: {customerInfo.province}</span></div>}
                       {customerInfo?.district && <div className="receipt-item"><span className="receipt-item-detail">District: {customerInfo.district}</span></div>}
-                    </div>
-                    <div className="receipt-divider" />
-                  </>
-                ) : null}
-                {customerInfo?.commune || customerInfo?.village ? (
-                  <>
-                    <pre className="receipt-label">🏘️ Address</pre>
-                    <div className="receipt-items">
                       {customerInfo?.commune && <div className="receipt-item"><span className="receipt-item-detail">Commune: {customerInfo.commune}</span></div>}
                       {customerInfo?.village && <div className="receipt-item"><span className="receipt-item-detail">Village: {customerInfo.village}</span></div>}
                     </div>
