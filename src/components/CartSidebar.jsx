@@ -1,13 +1,65 @@
-import { HiX, HiMinus, HiPlus, HiTrash, HiOutlineShoppingBag } from 'react-icons/hi';
+import { HiX, HiMinus, HiPlus, HiTrash, HiOutlineShoppingBag, HiCheckCircle } from 'react-icons/hi';
 import { SiTelegram } from 'react-icons/si';
 import { useCart } from '../context/CartContext';
 
 const TELEGRAM_USERNAME = 'aurashop369';
 
 export default function CartSidebar() {
-  const { items, isOpen, setIsOpen, updateQuantity, removeItem, totalPrice, checkoutViaTelegram } = useCart();
+  const { items, isOpen, setIsOpen, updateQuantity, removeItem, clearCart, totalPrice, checkoutViaTelegram, showReceipt, closeReceipt } = useCart();
 
-  if (!isOpen) return null;
+  if (!isOpen && !showReceipt) return null;
+
+  if (showReceipt) {
+    return (
+      <>
+        <div className="cart-overlay" onClick={closeReceipt} />
+        <aside className="cart-sidebar cart-receipt">
+          <div className="receipt-header">
+            <HiCheckCircle size={28} />
+            <h2>Order Confirmed</h2>
+            <p className="receipt-subtitle">Your order has been sent to Telegram</p>
+          </div>
+
+          <div className="cart-receipt-box">
+            <div className="cart-receipt-border">
+              <div className="cart-receipt-content">
+                <pre className="receipt-ascii">
+                  {`╔══════════════════╗
+      AURA SHOP
+   Order Confirmation
+╚══════════════════╝`}
+                </pre>
+                <div className="receipt-divider" />
+                <pre className="receipt-label">📦 ORDER SUMMARY</pre>
+                <div className="receipt-items">
+                  {items.map((item) => (
+                    <div key={item._id} className="receipt-item">
+                      <span className="receipt-item-name">▸ {item.name}</span>
+                      <span className="receipt-item-detail">Quantity: {item.quantity}</span>
+                      <span className="receipt-item-detail">Unit Price: ${item.price.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="receipt-divider" />
+                <div className="receipt-total-row">
+                  <span>💰 Total:</span>
+                  <span>${totalPrice.toFixed(2)}</span>
+                </div>
+                <div className="receipt-divider" />
+                <pre className="receipt-thanks">Thank you for your order!</pre>
+              </div>
+            </div>
+          </div>
+
+          <div className="cart-footer">
+            <button className="btn btn-primary" onClick={closeReceipt} id="receipt-done">
+              Done
+            </button>
+          </div>
+        </aside>
+      </>
+    );
+  }
 
   return (
     <>

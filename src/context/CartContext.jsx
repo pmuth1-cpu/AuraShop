@@ -11,6 +11,7 @@ export function CartProvider({ children }) {
     } catch { return []; }
   });
   const [isOpen, setIsOpen] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('aura_cart', JSON.stringify(items));
@@ -42,31 +43,28 @@ export function CartProvider({ children }) {
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-  const generateTelegramMessage = () => {
-    let msg = '╔═══════════════ Aura Shop ═══════════════╗\n' +
-              '            Order Confirmation\n' +
-              '╚═══════════════╝\n\n' +
-              '📦 Order Summary\n\n';
-    items.forEach((item, idx) => {
-      msg += `▸ ${item.name}\n` +
-             `  Quantity: ${item.quantity}\n` +
-             `  Unit Price: $${item.price.toFixed(2)}\n\n`;
+  const generateReceipt = () => {
+    let receipt = '';
+    items.forEach((item) => {
+      receipt += `${item.name} x${item.quantity} — $${(item.price * item.quantity).toFixed(2)}\n`;
     });
-    msg += '──────────────────────\n' +
-           `💰 Total Amount: $${totalPrice.toFixed(2)}\n` +
-           '──────────────────────\n\n' +
-           'Thank you for your order!';
-    return msg;
+    return receipt;
   };
 
   const checkoutViaTelegram = (username) => {
-    const message = generateTelegramMessage();
+    setShowReceipt(true);
+    const message = generateReceipt();
     const encoded = encodeURIComponent(message);
     window.open(`https://t.me/${username}?text=${encoded}`, '_blank');
   };
 
+  const closeReceipt = () => {
+    setShowReceipt(false);
+    clearCart();
+  };
+
   return (
-    <CartContext.Provider value={{ items, isOpen, setIsOpen, addItem, updateQuantity, removeItem, clearCart, totalItems, totalPrice, checkoutViaTelegram }}>
+    <CartContext.Provider value={{ items, isOpen, setIsOpen, addItem, updateQuantity, removeItem, clearCart, totalItems, totalPrice, checkoutViaTelegram, showReceipt, closeReceipt }}>
       {children}
     </CartContext.Provider>
   );
