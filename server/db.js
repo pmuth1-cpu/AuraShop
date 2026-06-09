@@ -26,11 +26,29 @@ export async function getAllProducts(filters = {}) {
   if (filters.minPrice !== undefined) query.price = { $gte: Number(filters.minPrice) };
   if (filters.maxPrice !== undefined) query.price = { ...query.price, $lte: Number(filters.maxPrice) };
   if (filters.excludeId) query._id = { $ne: filters.excludeId };
-  return Product.find(query).sort({ createdAt: -1 }).lean();
+  const items = await Product.find(query).sort({ createdAt: -1 }).lean();
+  return items.map(normalizeProduct);
 }
 
 export async function getProductById(id) {
-  return Product.findById(id).lean();
+  const item = await Product.findById(id).lean();
+  if (!item) return null;
+  return normalizeProduct(item);
+}
+
+export function normalizeProduct(item) {
+  const images = (item.images && item.images.length > 0)
+    ? item.images
+    : (item.image ? [item.image] : []);
+  const maxIdx = images.length > 0 ? images.length - 1 : 0;
+  const rawIdx = typeof item.imagePrimaryIndex === 'number' ? item.imagePrimaryIndex : 0;
+  const primaryIdx = rawIdx < 0 || rawIdx > maxIdx ? 0 : rawIdx;
+  return {
+    ...item,
+    images,
+    imagePrimaryIndex: primaryIdx,
+    image: item.image || images[0] || '',
+  };
 }
 
 export async function createProduct(data) {

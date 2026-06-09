@@ -14,6 +14,11 @@ export const productAPI = {
   create: (formData) => API.post('/products', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   update: (id, formData) => API.put(`/products/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   delete: (id) => API.delete(`/products/${id}`),
+  uploadImages: (files) => {
+    const fd = new FormData();
+    Array.from(files).forEach((f, idx) => fd.append('images', f, f.name));
+    return API.post('/products/upload-image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
 };
 
 export const categoryAPI = {

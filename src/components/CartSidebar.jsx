@@ -43,6 +43,16 @@ export default function CartSidebar() {
                     <div className="receipt-divider" />
                   </>
                 ) : null}
+                {customerInfo?.commune || customerInfo?.village ? (
+                  <>
+                    <pre className="receipt-label">🏘️ Address</pre>
+                    <div className="receipt-items">
+                      {customerInfo?.commune && <div className="receipt-item"><span className="receipt-item-detail">Commune: {customerInfo.commune}</span></div>}
+                      {customerInfo?.village && <div className="receipt-item"><span className="receipt-item-detail">Village: {customerInfo.village}</span></div>}
+                    </div>
+                    <div className="receipt-divider" />
+                  </>
+                ) : null}
                 <pre className="receipt-label">📦 ORDER SUMMARY</pre>
                 <div className="receipt-items">
                   {items.map((item) => (

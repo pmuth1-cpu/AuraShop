@@ -24,6 +24,15 @@ const productSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  images: {
+    type: [String],
+    default: [],
+  },
+  imagePrimaryIndex: {
+    type: Number,
+    default: 0,
+    min: [0, 'Invalid image index'],
+  },
   stock: {
     type: Number,
     default: 0,
