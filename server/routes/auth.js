@@ -52,16 +52,15 @@ router.post('/reset-admin', async (req, res) => {
     return res.status(403).json({ message: 'Unauthorized' });
   }
   try {
-    const exists = await adminExists();
-    if (!exists) {
-      const hashedPassword = await bcrypt.hash('kdmvtrovteroyban', 12);
-      await createAdmin({ username: 'aurashop369', password: hashedPassword });
-      return res.json({ message: 'Admin created', username: 'aurashop369', password: 'kdmvtrovteroyban' });
-    }
     const Admin = (await import('../models/Admin.js')).default;
     const hashedPassword = await bcrypt.hash('kdmvtrovteroyban', 12);
-    await Admin.updateOne({}, { $set: { username: 'aurashop369', password: hashedPassword } });
-    res.json({ message: 'Admin reset', username: 'aurashop369', password: 'kdmvtrovteroyban' });
+    const existing = await Admin.findOne();
+    if (existing) {
+      await Admin.updateOne({}, { $set: { username: 'aurashop369', password: hashedPassword } });
+      return res.json({ message: 'Admin updated', username: 'aurashop369', password: 'kdmvtrovteroyban' });
+    }
+    await Admin.create({ username: 'aurashop369', password: hashedPassword });
+    res.json({ message: 'Admin created', username: 'aurashop369', password: 'kdmvtrovteroyban' });
   } catch (err) {
     console.error('Reset error:', err);
     res.status(500).json({ message: 'Reset failed', error: err.message });
