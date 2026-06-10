@@ -38,13 +38,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '..', 'dist')));
-  app.use((req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
-  });
-}
+// Serve frontend
+app.use(express.static(path.join(__dirname, '..', 'dist')));
+
+// Root route - serve index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+});
+
+// Catch-all for SPA routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+});
 
 async function start() {
   await connectDB();

@@ -16,8 +16,6 @@ services:
       - key: MONGODB_URI
         value: mongodb+srv://USER:PASS@cluster.mongodb.net/aurashop?retryWrites=true&w=majority
         helpText: Replace with your MongoDB Atlas connection string.
-      - key: PORT
-        value: 5000
       - key: CLOUDINARY_CLOUD_NAME
         fromSecret: CLOUDINARY_CLOUD_NAME
       - key: CLOUDINARY_API_KEY
