@@ -142,7 +142,8 @@ export function CartProvider({ children }) {
       const qty = Number(item.quantity || 0);
       const price = Number(item.price || 0);
       const lineTotal = qty * price;
-      receipt += `${idx + 1}.${name}\n`;
+      const variantText = item.variantInfo ? ` [${item.variantInfo}]` : '';
+      receipt += `${idx + 1}.${name}${variantText}\n`;
       receipt += `   Qty: ${qty} x $${price.toFixed(2)} = $${lineTotal.toFixed(2)}\n`;
     });
     receipt += '----------------------------------------\n';

@@ -5,6 +5,7 @@ import { productAPI } from '../api';
 
 export default function ProductModal({ product, onClose, onSelectSimilar }) {
   const [qty, setQty] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [similar, setSimilar] = useState([]);
   const [imageIndex, setImageIndex] = useState(0);
   const { addItem } = useCart();
@@ -41,7 +42,12 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
   };
 
   const handleAdd = () => {
-    addItem(product, qty);
+    const productToAdd = {
+      ...product,
+      selectedVariant,
+      variantInfo: selectedVariant ? `${selectedVariant.size || ''} ${selectedVariant.color || ''}`.trim() : null
+    };
+    addItem(productToAdd, qty);
     onClose();
   };
 
@@ -79,6 +85,26 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
             <span className={`dot ${product.inStock ? 'in' : 'out'}`} />
             <span>{product.inStock ? `In Stock (${product.stock})` : 'Out of Stock'}</span>
           </div>
+          {product.inStock && product.variants && product.variants.length > 0 && (
+            <div style={{ margin: '12px 0' }}>
+              {product.variants.some(v => v.size) && (
+                <div style={{ marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 500, marginRight: '8px' }}>Size:</span>
+                  {product.variants.filter(v => v.size).map((v, idx) => (
+                    <button key={`size-${idx}`} type="button" onClick={() => setSelectedVariant(v)} style={{ padding: '6px 12px', marginRight: '6px', marginBottom: '6px', background: selectedVariant === v ? 'var(--accent)' : 'var(--bg-secondary)', color: selectedVariant === v ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>{v.size}</button>
+                  ))}
+                </div>
+              )}
+              {product.variants.some(v => v.color) && (
+                <div>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 500, marginRight: '8px' }}>Color:</span>
+                  {product.variants.filter(v => v.color).map((v, idx) => (
+                    <button key={`color-${idx}`} type="button" onClick={() => setSelectedVariant(v)} style={{ padding: '6px 12px', marginRight: '6px', marginBottom: '6px', background: selectedVariant === v ? 'var(--accent)' : 'var(--bg-secondary)', color: selectedVariant === v ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>{v.color}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {images.length > 1 && (
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>{imageIndex + 1} / {images.length} images</p>
           )}

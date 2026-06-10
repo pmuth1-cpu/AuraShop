@@ -43,16 +43,16 @@ export default function CartSidebar() {
                   ? [receiptInfo?.province, receiptInfo?.district, receiptInfo?.commune, receiptInfo?.village].filter(Boolean).join(', ')
                   : '(province), (district), (commune), (village)'}</pre>
                 <pre className="receipt-label">🛒Cart summary</pre>
-                <div className="receipt-items">
-                  {items.map((item, idx) => (
-                    <div key={item._id} className="receipt-item">
-                      <pre className="receipt-item-name">{idx + 1}.{item.name}</pre>
-                      <pre className="receipt-item-detail">   Qty: {item.quantity} x ${item.price.toFixed(2)} = ${(item.quantity * item.price).toFixed(2)}</pre>
-                    </div>
-                  ))}
-                </div>
+<div className="receipt-items">
+                   {items.map((item, idx) => (
+                     <div key={item._id} className="receipt-item">
+                       <pre className="receipt-item-name">{idx + 1}.{item.name}{item.variantInfo ? ` [${item.variantInfo}]` : ''}</pre>
+                       <pre className="receipt-item-detail">   Qty: {item.quantity} x ${item.price.toFixed(2)} = ${(item.quantity * item.price).toFixed(2)}</pre>
+                     </div>
+                   ))}
+                 </div>
                 <pre className="receipt-divider">----------------------------------------</pre>
-                <pre className="receipt-total-row">💲total: ${grandTotal.toFixed(2)}{(localTransport > 0 ? ` + ${localTransport.toFixed(2)}` : '')}</pre>
+                <pre className="receipt-total-row">💲total: ${(grandTotal + localTransport).toFixed(2)}{(localTransport > 0 ? ` + ${localTransport.toFixed(2)}` : '')}</pre>
                 <pre className="receipt-divider">----------------------------------------</pre>
                 <pre className="receipt-thanks">📤Please confirm my order! Thank you!</pre>
               </div>
