@@ -67,24 +67,30 @@ router.post('/upload-image', verifyToken, uploadMultiple.array('images'), async 
   }
 });
 
-router.post('/', verifyToken, upload.single('image'), async (req, res) => {
+router.post('/', verifyToken, uploadMultiple.array('images', 10), async (req, res) => {
   try {
     let imageUrl = req.body.image || '';
     const images = req.body.images ? JSON.parse(req.body.images) : [];
-    if (req.file) {
-      imageUrl = await uploadToCloudinary(req.file.buffer, 'products');
-      if (!images.includes(imageUrl)) images.unshift(imageUrl);
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const url = await uploadToCloudinary(file.buffer, 'products');
+        images.unshift(url);
+      }
+      imageUrl = images[0];
     }
-    const primaryIndex = images.length > 0 ? 0 : 0;
+    const price = Number(req.body.price);
+    if (isNaN(price) || price < 0) {
+      return res.status(400).json({ message: 'Valid price is required' });
+    }
     const product = await createProduct({
       ...req.body,
-      price: Number(req.body.price),
+      price,
       stock: Number(req.body.stock) || 0,
       inStock: req.body.inStock === 'true' || req.body.inStock === true,
       featured: req.body.featured === 'true' || req.body.featured === true,
       image: imageUrl,
       images: images,
-      imagePrimaryIndex: primaryIndex,
+      imagePrimaryIndex: 0,
     });
     res.status(201).json(product);
   } catch (error) {
@@ -93,20 +99,31 @@ router.post('/', verifyToken, upload.single('image'), async (req, res) => {
   }
 });
 
-router.put('/:id', verifyToken, upload.single('image'), async (req, res) => {
+router.put('/:id', verifyToken, uploadMultiple.array('images', 10), async (req, res) => {
   try {
     const data = { ...req.body };
     if (data.price !== undefined) data.price = Number(data.price);
     if (data.stock !== undefined) data.stock = Number(data.stock) || 0;
     if (data.inStock !== undefined) data.inStock = data.inStock === 'true' || data.inStock === true;
     if (data.featured !== undefined) data.featured = data.featured === 'true' || data.featured === true;
-    if (req.file) {
-      data.image = await uploadToCloudinary(req.file.buffer, 'products');
+    
+    let images = data.images ? (Array.isArray(data.images) ? data.images : JSON.parse(data.images)) : [];
+    
+    if (req.files && req.files.length > 0) {
+      const newUrls = [];
+      for (const file of req.files) {
+        const url = await uploadToCloudinary(file.buffer, 'products');
+        newUrls.push(url);
+      }
+      images = [...newUrls, ...images];
     }
-    if (data.images) data.images = JSON.parse(data.images);
-    if (data.imagePrimaryIndex !== undefined) data.imagePrimaryIndex = Number(data.imagePrimaryIndex);
-    if (req.file && data.image && !data.images.includes(data.image)) data.images.unshift(data.image);
-
+    
+    if (images.length > 0) {
+      data.image = images[0];
+      data.images = images;
+      data.imagePrimaryIndex = 0;
+    }
+    
     const product = await updateProduct(req.params.id, data);
     if (!product) return res.status(404).json({ message: 'Product not found.' });
     res.json(product);

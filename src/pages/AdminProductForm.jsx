@@ -123,12 +123,7 @@ export default function AdminProductForm() {
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="price">Price ($)</label>
-              <input type="range" id="price" name="price" min="0" max="500" step="1" value={form.price} onChange={handleChange} required />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                <span>$0</span>
-                <span style={{ fontWeight: 600, color: 'var(--accent)' }}>${Number(form.price).toFixed(2)}</span>
-                <span>$500</span>
-              </div>
+              <input type="number" id="price" name="price" value={form.price} onChange={handleChange} required min="0" step="0.01" placeholder="0.00" />
             </div>
             <div className="form-group">
               <label htmlFor="oldPrice">Old Price ($)</label>
