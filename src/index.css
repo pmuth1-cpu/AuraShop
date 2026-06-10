@@ -277,6 +277,7 @@ input[type="range"]::-moz-range-thumb{ width: 18px; height: 18px; border-radius:
   .cart-sidebar{width:100%}
   .navbar-links{display:none}
   .mobile-menu-btn{display:block}
+  #mobile-categories-btn{display:inline-flex!important}
   .hero h1{font-size:2.2rem}
   .products-grid{grid-template-columns:repeat(4,220px);justify-content:start;overflow-x:auto;padding-bottom:8px}
   .products-grid::-webkit-scrollbar{height:6px}

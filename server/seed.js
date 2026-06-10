@@ -13,21 +13,27 @@ const sampleProducts = [
 ];
 
 async function seed() {
-  if (adminExists()) {
+  const exists = await adminExists();
+  if (exists) {
     console.log('⚠️  Database already seeded. Delete server/data/ folder to re-seed.');
     return;
   }
 
   // Create admin with hashed password
   const hashedPassword = await bcrypt.hash('admin123', 12);
-  createAdmin({ username: 'admin', password: hashedPassword });
+  await createAdmin({ username: 'admin', password: hashedPassword });
   console.log('👤 Admin created — username: admin / password: admin123');
 
   // Create products
-  sampleProducts.forEach(p => createProduct(p));
+  for (const p of sampleProducts) {
+    await createProduct(p);
+  }
   console.log(`📦 ${sampleProducts.length} sample products created`);
 
   console.log('\n🎉 Seed complete!');
 }
 
-seed();
+seed().catch(err => {
+  console.error('Seed failed:', err);
+  process.exit(1);
+});

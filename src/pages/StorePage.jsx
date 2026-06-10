@@ -73,6 +73,9 @@ export default function StorePage() {
               <span style={{ fontWeight: 600, color: 'var(--accent)', minWidth: '60px' }}>${maxPrice ? Number(maxPrice).toFixed(0) : 'Any'}</span>
               {maxPrice && <button onClick={() => setMaxPrice('')} style={{ background: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'underline', cursor: 'pointer' }}>Clear</button>}
             </div>
+            <button onClick={() => setIsCategoryModalOpen(true)} className="btn btn-secondary btn-sm" style={{ display: 'none' }} id="mobile-categories-btn">
+              Categories
+            </button>
 
             {activeCategory !== 'all' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 16px', background: 'rgba(139,92,246,0.12)', color: 'var(--accent)', borderRadius: '50px', fontSize: '0.9rem', fontWeight: 600 }}>

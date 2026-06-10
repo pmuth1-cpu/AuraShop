@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 export default function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, login } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
-  const [username, setUsername] = useState('@aurashop369');
+  const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
@@ -20,7 +21,8 @@ export default function ProtectedRoute({ children }) {
     try {
       await login(username, password);
     } catch (err) {
-      // Error handled by AuthContext
+      const msg = err.response?.data?.message || err.message || 'Login failed';
+      toast.error(msg);
     } finally {
       setLoginLoading(false);
     }

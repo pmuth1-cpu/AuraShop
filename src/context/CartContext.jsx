@@ -98,13 +98,10 @@ export function CartProvider({ children }) {
     receipt += '                AURA  SHOP\n';
     receipt += '             Order  Confirm\n';
     receipt += '╚════════════════╝\n';
-    if (customerInfo.phone) {
-      const phone = String(customerInfo.phone || '').replace(/undefined|null/g, '').trim();
-      if (phone) receipt += `Phone number: ${phone}\n`;
-    }
-    const location = [customerInfo.province, customerInfo.district, customerInfo.commune, customerInfo.village].filter(Boolean).map(v => String(v).replace(/undefined|null/g, '').trim()).filter(Boolean).join(', ');
-    if (location) receipt += `Location: ${location}\n`;
-    receipt += '\nCart summary\n';
+    receipt += `Phone number: ${customerInfo?.phone || '(phone number)'}\n`;
+    const locationParts = [customerInfo?.province, customerInfo?.district, customerInfo?.commune, customerInfo?.village].filter(Boolean).map(v => String(v).replace(/undefined|null/g, '').trim()).filter(Boolean);
+    receipt += `Location: ${locationParts.length > 0 ? locationParts.join(', ') : '(province), (district), (commune), (village)'}\n`;
+    receipt += '\n🛒Cart summary\n';
     items.forEach((item, idx) => {
       const name = String(item.name || '').replace(/undefined|null/g, '').trim();
       const qty = Number(item.quantity || 0);
@@ -113,11 +110,11 @@ export function CartProvider({ children }) {
       receipt += `${idx + 1}.${name}\n`;
       receipt += `   Qty: ${qty} x $${price.toFixed(2)} = $${lineTotal.toFixed(2)}\n`;
     });
-    receipt += `transport cost: ${transportCostVal.toFixed(2)}\n`;
-    receipt += '__________________\n';
-    receipt += `total: ${grandTotal.toFixed(2)}\n`;
-    receipt += '__________________\n';
-    receipt += 'Please confirm my order! Thank you!';
+    receipt += '----------------------------------------\n';
+    const totalText = transportCostVal > 0 ? `💲total: $${grandTotal.toFixed(2)} + $${transportCostVal.toFixed(2)}` : `💲total: $${grandTotal.toFixed(2)}`;
+    receipt += `${totalText}\n`;
+    receipt += '----------------------------------------\n';
+    receipt += '📤Please confirm my order! Thank you!';
     return receipt;
   };
 

@@ -37,11 +37,11 @@ export default function CartSidebar() {
              Order  Confirm
 ╚════════════════╝`}
                 </pre>
-                {customerInfo?.phone && <pre className="receipt-label">Phone number: {customerInfo.phone}</pre>}
-                {[customerInfo?.province, customerInfo?.district, customerInfo?.commune, customerInfo?.village].filter(Boolean).length > 0 && (
-                  <pre className="receipt-label">Location: {[customerInfo?.province, customerInfo?.district, customerInfo?.commune, customerInfo?.village].filter(Boolean).join(', ')}</pre>
-                )}
-                <pre className="receipt-label">Cart summary</pre>
+                <pre className="receipt-label">Phone number: {customerInfo?.phone || '(phone number)'}</pre>
+                <pre className="receipt-label">Location: {[customerInfo?.province, customerInfo?.district, customerInfo?.commune, customerInfo?.village].filter(Boolean).length > 0 
+                  ? [customerInfo?.province, customerInfo?.district, customerInfo?.commune, customerInfo?.village].filter(Boolean).join(', ')
+                  : '(province), (district), (commune), (village)'}</pre>
+                <pre className="receipt-label">🛒Cart summary</pre>
                 <div className="receipt-items">
                   {items.map((item, idx) => (
                     <div key={item._id} className="receipt-item">
@@ -50,12 +50,10 @@ export default function CartSidebar() {
                     </div>
                   ))}
                 </div>
-                <div className="receipt-divider" />
-                <pre className="receipt-label">transport cost: {transportCost.toFixed(2)}</pre>
-                <pre className="receipt-total-row">__________________</pre>
-                <pre className="receipt-total-row">total: {grandTotal.toFixed(2)}</pre>
-                <pre className="receipt-total-row">__________________</pre>
-                <pre className="receipt-thanks">Please confirm my order! Thank you!</pre>
+                <pre className="receipt-divider">----------------------------------------</pre>
+                <pre className="receipt-total-row">💲total: ${grandTotal.toFixed(2)}{(transportCost > 0 ? ` + ${transportCost.toFixed(2)}` : '')}</pre>
+                <pre className="receipt-divider">----------------------------------------</pre>
+                <pre className="receipt-thanks">📤Please confirm my order! Thank you!</pre>
               </div>
             </div>
           </div>
