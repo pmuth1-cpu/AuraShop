@@ -52,9 +52,14 @@ app.get('*', (req, res) => {
 });
 
 async function start() {
-  await connectDB();
+  try {
+    await connectDB();
+    console.log('✅ Database connected');
+  } catch (err) {
+    console.error('⚠️ Database connection failed (continuing anyway):', err.message);
+  }
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
   });
 }
 
