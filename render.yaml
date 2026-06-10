@@ -11,6 +11,8 @@ services:
       - key: JWT_SECRET
         value: aura-shop-secret-key-2026-change-in-production
         helpText: Keep this stable; changing it invalidates all existing tokens.
+      - key: ADMIN_RESET_SECRET
+        value: reset-secret-369
       - key: MONGODB_URI
         value: mongodb+srv://USER:PASS@cluster.mongodb.net/aurashop?retryWrites=true&w=majority
         helpText: Replace with your MongoDB Atlas connection string.

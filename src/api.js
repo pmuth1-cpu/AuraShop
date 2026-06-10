@@ -32,6 +32,7 @@ export const categoryAPI = {
 export const authAPI = {
   login: (credentials) => API.post('/auth/login', credentials),
   verify: () => API.get('/auth/verify'),
+  resetAdmin: () => API.post('/auth/reset-admin', {}, { headers: { 'x-reset-secret': 'reset-secret-369' } }),
 };
 
 export default API;

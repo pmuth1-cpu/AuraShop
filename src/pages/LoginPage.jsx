@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { HiLockClosed, HiArrowLeft } from 'react-icons/hi';
+import { HiLockClosed, HiArrowLeft, HiRefresh } from 'react-icons/hi';
 import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../api';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -22,6 +23,16 @@ export default function LoginPage() {
       toast.error(err.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetAdmin = async () => {
+    if (!confirm('Reset admin to aurashop369 / kdmvtrovteroyban?')) return;
+    try {
+      const res = await authAPI.resetAdmin();
+      toast.success(res.data.message);
+    } catch (err) {
+      toast.error('Reset failed - check server logs');
     }
   };
 
@@ -48,6 +59,9 @@ export default function LoginPage() {
             <HiLockClosed /> {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+        <button onClick={handleResetAdmin} className="btn btn-secondary btn-sm" style={{ width: '100%', marginTop: '8px' }}>
+          <HiRefresh /> Reset Admin Credentials
+        </button>
       </div>
     </div>
   );
