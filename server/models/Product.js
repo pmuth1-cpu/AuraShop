@@ -1,5 +1,11 @@
 import mongoose from 'mongoose';
 
+const variantSchema = new mongoose.Schema({
+  size: { type: String, trim: true },
+  color: { type: String, trim: true },
+  stock: { type: Number, default: 0, min: 0 },
+}, { _id: false });
+
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -45,6 +51,10 @@ const productSchema = new mongoose.Schema({
   featured: {
     type: Boolean,
     default: false,
+  },
+  variants: {
+    type: [variantSchema],
+    default: [],
   },
 }, {
   timestamps: true,

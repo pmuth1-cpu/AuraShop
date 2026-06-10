@@ -118,11 +118,39 @@ export function CartProvider({ children }) {
     return receipt;
   };
 
-  const checkoutViaTelegram = (username) => {
+  const checkoutViaTelegram = (username, customerInfoOverride = null, transportCostOverride = null) => {
     setShowReceipt(true);
-    const message = generateReceipt();
+    const info = customerInfoOverride || customerInfo;
+    const transport = transportCostOverride !== null ? transportCostOverride : transportCostVal;
+    const message = generateReceiptWithInfo(info, transport);
     const encoded = encodeURIComponent(message);
     window.open(`https://t.me/${username}?text=${encoded}`, '_blank');
+  };
+
+  const generateReceiptWithInfo = (info, transport) => {
+    let receipt = '';
+    receipt += '╔════════════════╗\n';
+    receipt += '                AURA  SHOP\n';
+    receipt += '             Order  Confirm\n';
+    receipt += '╚════════════════╝\n';
+    receipt += `Phone number: ${info?.phone || '(phone number)'}\n`;
+    const locationParts = [info?.province, info?.district, info?.commune, info?.village].filter(Boolean).map(v => String(v).replace(/undefined|null/g, '').trim()).filter(Boolean);
+    receipt += `Location: ${locationParts.length > 0 ? locationParts.join(', ') : '(province), (district), (commune), (village)'}\n`;
+    receipt += '\n🛒Cart summary\n';
+    items.forEach((item, idx) => {
+      const name = String(item.name || '').replace(/undefined|null/g, '').trim();
+      const qty = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      const lineTotal = qty * price;
+      receipt += `${idx + 1}.${name}\n`;
+      receipt += `   Qty: ${qty} x $${price.toFixed(2)} = $${lineTotal.toFixed(2)}\n`;
+    });
+    receipt += '----------------------------------------\n';
+    const totalText = transport > 0 ? `💲total: $${(subtotal + transport).toFixed(2)} + $${transport.toFixed(2)}` : `💲total: $${subtotal.toFixed(2)}`;
+    receipt += `${totalText}\n`;
+    receipt += '----------------------------------------\n';
+    receipt += '📤Please confirm my order! Thank you!';
+    return receipt;
   };
 
   const closeReceipt = () => {

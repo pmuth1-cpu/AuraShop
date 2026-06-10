@@ -18,6 +18,7 @@ export default function CartSidebar() {
   if (!isOpen && !showReceipt) return null;
 
   if (showReceipt) {
+    const receiptInfo = localInfo;
     return (
       <>
         <div className="cart-overlay" onClick={closeReceipt} />
@@ -37,9 +38,9 @@ export default function CartSidebar() {
              Order  Confirm
 ╚════════════════╝`}
                 </pre>
-                <pre className="receipt-label">Phone number: {customerInfo?.phone || '(phone number)'}</pre>
-                <pre className="receipt-label">Location: {[customerInfo?.province, customerInfo?.district, customerInfo?.commune, customerInfo?.village].filter(Boolean).length > 0 
-                  ? [customerInfo?.province, customerInfo?.district, customerInfo?.commune, customerInfo?.village].filter(Boolean).join(', ')
+                <pre className="receipt-label">Phone number: {receiptInfo?.phone || '(phone number)'}</pre>
+                <pre className="receipt-label">Location: {[receiptInfo?.province, receiptInfo?.district, receiptInfo?.commune, receiptInfo?.village].filter(Boolean).length > 0 
+                  ? [receiptInfo?.province, receiptInfo?.district, receiptInfo?.commune, receiptInfo?.village].filter(Boolean).join(', ')
                   : '(province), (district), (commune), (village)'}</pre>
                 <pre className="receipt-label">🛒Cart summary</pre>
                 <div className="receipt-items">
@@ -51,7 +52,7 @@ export default function CartSidebar() {
                   ))}
                 </div>
                 <pre className="receipt-divider">----------------------------------------</pre>
-                <pre className="receipt-total-row">💲total: ${grandTotal.toFixed(2)}{(transportCost > 0 ? ` + ${transportCost.toFixed(2)}` : '')}</pre>
+                <pre className="receipt-total-row">💲total: ${grandTotal.toFixed(2)}{(localTransport > 0 ? ` + ${localTransport.toFixed(2)}` : '')}</pre>
                 <pre className="receipt-divider">----------------------------------------</pre>
                 <pre className="receipt-thanks">📤Please confirm my order! Thank you!</pre>
               </div>
@@ -170,13 +171,13 @@ export default function CartSidebar() {
                  />
                </div>
             </div>
-            <button className="btn btn-primary" onClick={() => {
-              updateCustomerInfo(localInfo);
-              setTransportCost(localTransport);
-              checkoutViaTelegram(TELEGRAM_USERNAME);
-            }} id="checkout-telegram">
-              <SiTelegram size={18} /> Checkout via Telegram
-            </button>
+<button className="btn btn-primary" onClick={() => {
+               updateCustomerInfo(localInfo);
+               setTransportCost(localTransport);
+               checkoutViaTelegram(TELEGRAM_USERNAME, localInfo, localTransport);
+             }} id="checkout-telegram">
+               <SiTelegram size={18} /> Checkout via Telegram
+             </button>
           </div>
         )}
       </aside>

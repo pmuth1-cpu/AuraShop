@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { HiSave, HiUpload, HiX, HiPlus } from 'react-icons/hi';
+import { HiSave, HiUpload, HiX, HiPlus, HiTrash } from 'react-icons/hi';
 import { productAPI } from '../api';
 import AdminSidebar from '../components/AdminSidebar';
 import toast from 'react-hot-toast';
+
+const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 export default function AdminProductForm() {
   const { id } = useParams();
@@ -14,6 +16,7 @@ export default function AdminProductForm() {
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [variants, setVariants] = useState([]);
 
   useEffect(() => {
     if (isEdit) {
@@ -23,6 +26,7 @@ export default function AdminProductForm() {
         const imgs = p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
         setImagePreviews(imgs);
         setImageFiles([]);
+        setVariants(p.variants || []);
       }).catch(() => toast.error('Product not found'));
     }
   }, [id, isEdit]);
@@ -46,6 +50,10 @@ export default function AdminProductForm() {
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  const addVariant = () => setVariants(v => [...v, { size: '', color: '', stock: 0 }]);
+  const updateVariant = (idx, field, value) => setVariants(v => v.map((x, i) => i === idx ? { ...x, [field]: value } : x));
+  const removeVariant = (idx) => setVariants(v => v.filter((_, i) => i !== idx));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -59,6 +67,7 @@ export default function AdminProductForm() {
       fd.append('stock', Number(form.stock) || 0);
       fd.append('inStock', form.inStock);
       fd.append('featured', form.featured);
+      if (variants.length > 0) fd.append('variants', JSON.stringify(variants));
       imageFiles.forEach((file) => {
         fd.append('images', file);
       });
@@ -146,11 +155,32 @@ export default function AdminProductForm() {
               </div>
             </div>
           </div>
+          <div className="form-group">
+            <label>Variants (Size/Color - optional)</label>
+            {variants.length > 0 && (
+              <div style={{ display: 'grid', gap: '8px', marginBottom: '8px' }}>
+                {variants.map((v, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '8px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                    <select value={v.size} onChange={e => updateVariant(idx, 'size', e.target.value)} style={{ flex: 1, padding: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: '6px' }}>
+                      <option value="">Size</option>
+                      {SIZE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <input type="text" placeholder="Color" value={v.color} onChange={e => updateVariant(idx, 'color', e.target.value)} style={{ flex: 1, padding: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: '6px' }} />
+                    <input type="number" placeholder="Stock" value={v.stock} onChange={e => updateVariant(idx, 'stock', Number(e.target.value))} style={{ width: '80px', padding: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: '6px' }} min="0" />
+                    <button type="button" onClick={() => removeVariant(idx)} className="btn-icon" style={{ width: '32px', height: '32px' }}><HiTrash /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button type="button" onClick={addVariant} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <HiPlus /> Add Variant
+            </button>
+          </div>
           <button type="submit" className="btn btn-primary" disabled={loading} id="product-submit">
             <HiSave /> {loading ? 'Saving...' : isEdit ? 'Update Product' : 'Create Product'}
           </button>
         </form>
-      </main>
-    </div>
-  );
+        </main>
+      </div>
+    );
 }

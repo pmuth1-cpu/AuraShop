@@ -82,6 +82,7 @@ router.post('/', verifyToken, uploadMultiple.array('images', 10), async (req, re
     if (isNaN(price) || price < 0) {
       return res.status(400).json({ message: 'Valid price is required' });
     }
+    const variants = req.body.variants ? JSON.parse(req.body.variants) : [];
     const product = await createProduct({
       ...req.body,
       price,
@@ -90,6 +91,7 @@ router.post('/', verifyToken, uploadMultiple.array('images', 10), async (req, re
       featured: req.body.featured === 'true' || req.body.featured === true,
       image: imageUrl,
       images: images,
+      variants: variants,
       imagePrimaryIndex: 0,
     });
     res.status(201).json(product);
@@ -106,6 +108,7 @@ router.put('/:id', verifyToken, uploadMultiple.array('images', 10), async (req, 
     if (data.stock !== undefined) data.stock = Number(data.stock) || 0;
     if (data.inStock !== undefined) data.inStock = data.inStock === 'true' || data.inStock === true;
     if (data.featured !== undefined) data.featured = data.featured === 'true' || data.featured === true;
+    if (data.variants !== undefined) data.variants = JSON.parse(data.variants);
     
     let images = data.images ? (Array.isArray(data.images) ? data.images : JSON.parse(data.images)) : [];
     
