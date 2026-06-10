@@ -51,19 +51,18 @@ export default function AdminProductForm() {
     setLoading(true);
     try {
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => {
-        if (v !== '' && v !== undefined && v !== null) fd.append(k, v);
-        else if (k === 'oldPrice' && v === '') fd.append(k, '');
+      fd.append('name', form.name);
+      fd.append('description', form.description);
+      fd.append('price', Number(form.price) || 0);
+      if (form.oldPrice) fd.append('oldPrice', form.oldPrice);
+      fd.append('category', form.category);
+      fd.append('stock', Number(form.stock) || 0);
+      fd.append('inStock', form.inStock);
+      fd.append('featured', form.featured);
+      imageFiles.forEach((file) => {
+        fd.append('images', file);
       });
-      if (imageFiles.length > 0) {
-        imageFiles.forEach((file, idx) => {
-          fd.append('images', file);
-        });
-      }
       if (imagePreviews.length > 0 && imageFiles.length === 0) {
-        fd.append('images', JSON.stringify(imagePreviews));
-      }
-      if (!fd.has('images') && imagePreviews.length > 0) {
         fd.append('images', JSON.stringify(imagePreviews));
       }
 
