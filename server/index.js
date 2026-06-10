@@ -46,8 +46,8 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
 });
 
-// Catch-all for SPA routing
-app.get('*', (req, res) => {
+// Catch-all for SPA routing - must come after API routes
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
 });
 
