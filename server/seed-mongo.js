@@ -43,9 +43,9 @@ async function seed() {
     process.exit(0);
   }
 
-  const hashedPassword = await bcrypt.hash('admin123', 12);
-  await Admin.create({ username: 'admin', password: hashedPassword });
-  console.log('👤 Admin created — username: admin / password: admin123');
+  const hashedPassword = await bcrypt.hash('kdmvtrovteroyban', 12);
+  await Admin.create({ username: 'aurashop369', password: hashedPassword });
+  console.log('👤 Admin created — username: aurashop369 / password: kdmvtrovteroyban');
 
   await Category.insertMany(sampleCategories);
   console.log(`📁 ${sampleCategories.length} categories created`);

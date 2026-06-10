@@ -20,9 +20,9 @@ async function seed() {
   }
 
   // Create admin with hashed password
-  const hashedPassword = await bcrypt.hash('admin123', 12);
-  await createAdmin({ username: 'admin', password: hashedPassword });
-  console.log('👤 Admin created — username: admin / password: admin123');
+  const hashedPassword = await bcrypt.hash('kdmvtrovteroyban', 12);
+  await createAdmin({ username: 'aurashop369', password: hashedPassword });
+  console.log('👤 Admin created — username: aurashop369 / password: kdmvtrovteroyban (or @aurashop369)');
 
   // Create products
   for (const p of sampleProducts) {
