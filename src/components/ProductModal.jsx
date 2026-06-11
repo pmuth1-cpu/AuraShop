@@ -82,7 +82,6 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
           <h2 className="modal-name">{product.name}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span className="modal-price">${Number(product.price).toFixed(2)}</span>
-            {oldPrice && <span style={{ fontSize: '1rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>${oldPrice.toFixed(2)}</span>}
           </div>
           <p className="modal-desc">{product.description}</p>
           <div className="modal-stock">
@@ -146,5 +145,3 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
     </div>
   );
 }
-
-const oldPrice = product?.oldPrice && Number(product.oldPrice) > Number(product.price || 0) ? Number(product.oldPrice) : null;
