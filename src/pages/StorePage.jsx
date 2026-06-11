@@ -98,7 +98,7 @@ export default function StorePage() {
                               <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', background: 'var(--bg-secondary)' }}>📦</div>
                             )}
                             {product.featured && <span className="badge">Featured</span>}
-                            {!product.inStock && <span className="badge out-of-stock">Sold Out</span>}
+                            {!product.inStock && <span className="badge out-of-stock">Pre-order</span>}
                           </div>
                           <div className="product-card-body">
                             <div className="product-card-category">{product.category}</div>

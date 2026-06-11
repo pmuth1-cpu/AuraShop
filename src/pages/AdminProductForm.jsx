@@ -1,22 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { HiSave, HiUpload, HiX, HiPlus, HiTrash } from 'react-icons/hi';
-import { productAPI } from '../api';
+import { HiSave, HiUpload, HiX } from 'react-icons/hi';
+import { productAPI, categoryAPI } from '../api';
 import AdminSidebar from '../components/AdminSidebar';
 import toast from 'react-hot-toast';
-
-const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 export default function AdminProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = !!id;
 
-  const [form, setForm] = useState({ name: '', description: '', price: '', oldPrice: '', category: '', stock: '', inStock: true, featured: false });
+  const [form, setForm] = useState({ 
+    name: '', 
+    description: '', 
+    price: '', 
+    category: '', 
+    inStock: true, 
+    featured: false, 
+    availabilityStatus: 'instock',
+    sizes: [],
+    colors: []
+  });
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [variants, setVariants] = useState([]);
   const [categories, setCategories] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showNewCat, setShowNewCat] = useState(false);
@@ -25,11 +32,20 @@ export default function AdminProductForm() {
     if (isEdit) {
       productAPI.getById(id).then(r => {
         const p = r.data;
-        setForm({ name: p.name, description: p.description, price: p.price, oldPrice: p.oldPrice || '', category: p.category, stock: p.stock, inStock: p.inStock, featured: p.featured });
+        setForm({ 
+          name: p.name, 
+          description: p.description, 
+          price: p.price, 
+          category: p.category, 
+          inStock: p.inStock, 
+          featured: p.featured, 
+          availabilityStatus: p.availabilityStatus || (p.inStock ? 'instock' : 'preorder'),
+          sizes: p.sizes || [],
+          colors: p.colors || []
+        });
         const imgs = p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
         setImagePreviews(imgs);
         setImageFiles([]);
-        setVariants(p.variants || []);
       }).catch(() => toast.error('Product not found'));
     }
   }, [id, isEdit]);
@@ -40,7 +56,11 @@ export default function AdminProductForm() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+    if (type === 'radio') {
+      setForm(f => ({ ...f, [name]: value }));
+    } else {
+      setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+    }
   };
 
   const handleImage = (e) => {
@@ -57,10 +77,6 @@ export default function AdminProductForm() {
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const addVariant = () => setVariants(v => [...v, { size: '', color: '', stock: 0 }]);
-  const updateVariant = (idx, field, value) => setVariants(v => v.map((x, i) => i === idx ? { ...x, [field]: value } : x));
-  const removeVariant = (idx) => setVariants(v => v.filter((_, i) => i !== idx));
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -69,12 +85,12 @@ export default function AdminProductForm() {
       fd.append('name', form.name);
       fd.append('description', form.description);
       fd.append('price', Number(form.price) || 0);
-      if (form.oldPrice) fd.append('oldPrice', form.oldPrice);
+      fd.append('availabilityStatus', form.availabilityStatus);
       fd.append('category', form.category);
-      fd.append('stock', Number(form.stock) || 0);
-      fd.append('inStock', form.inStock);
+      fd.append('inStock', form.availabilityStatus === 'instock');
       fd.append('featured', form.featured);
-      if (variants.length > 0) fd.append('variants', JSON.stringify(variants));
+      fd.append('sizes', JSON.stringify(form.sizes));
+      fd.append('colors', JSON.stringify(form.colors));
       imageFiles.forEach((file) => {
         fd.append('images', file);
       });
@@ -135,16 +151,6 @@ export default function AdminProductForm() {
             <label htmlFor="description">Description</label>
             <textarea id="description" name="description" value={form.description} onChange={handleChange} required placeholder="Product description" />
           </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="price">Price ($)</label>
-              <input type="number" id="price" name="price" value={form.price} onChange={handleChange} required min="0" step="0.01" placeholder="0.00" />
-            </div>
-            <div className="form-group">
-              <label htmlFor="oldPrice">Old Price ($)</label>
-              <input type="number" id="oldPrice" name="oldPrice" value={form.oldPrice} onChange={handleChange} min="0" step="0.01" placeholder="0.00" />
-            </div>
-          </div>
           <div className="form-group">
             <label htmlFor="category">Category</label>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -203,45 +209,67 @@ export default function AdminProductForm() {
               </div>
             )}
           </div>
+          <div className="form-group">
+            <label>Availability</label>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <label className="form-check">
+                <input type="radio" name="availabilityStatus" value="instock" checked={form.availabilityStatus === 'instock'} onChange={handleChange} />
+                In Stock
+              </label>
+              <label className="form-check">
+                <input type="radio" name="availabilityStatus" value="preorder" checked={form.availabilityStatus === 'preorder'} onChange={handleChange} />
+                Pre-order
+              </label>
+            </div>
+          </div>
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="stock">Stock</label>
-              <input type="number" id="stock" name="stock" value={form.stock} onChange={handleChange} min="0" placeholder="0" />
+              <label htmlFor="price">Price ($)</label>
+              <input type="number" id="price" name="price" value={form.price} onChange={handleChange} required min="0" step="0.01" placeholder="0.00" />
             </div>
             <div className="form-group">
               <label>&nbsp;</label>
               <div style={{ display: 'flex', gap: '16px' }}>
-                <label className="form-check"><input type="checkbox" name="inStock" checked={form.inStock} onChange={handleChange} /> In Stock</label>
                 <label className="form-check"><input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} /> Featured</label>
               </div>
             </div>
           </div>
           <div className="form-group">
-            <label>Variants (Size/Color - optional)</label>
-            {variants.length > 0 && (
-              <div style={{ display: 'grid', gap: '8px', marginBottom: '8px' }}>
-                {variants.map((v, idx) => (
-                  <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '8px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-                    <select value={v.size} onChange={e => updateVariant(idx, 'size', e.target.value)} style={{ flex: 1, padding: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: '6px' }}>
-                      <option value="">Size</option>
-                      {SIZE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <input type="text" placeholder="Color" value={v.color} onChange={e => updateVariant(idx, 'color', e.target.value)} style={{ flex: 1, padding: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: '6px' }} />
-                    <input type="number" placeholder="Stock" value={v.stock} onChange={e => updateVariant(idx, 'stock', Number(e.target.value))} style={{ width: '80px', padding: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: '6px' }} min="0" />
-                    <button type="button" onClick={() => removeVariant(idx)} className="btn-icon" style={{ width: '32px', height: '32px' }}><HiTrash /></button>
-                  </div>
-                ))}
+            <label>Size & Color Options</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Sizes (comma separated)</label>
+                <input
+                  type="text"
+                  value={form.sizes?.join(', ') || ''}
+                  onChange={e => {
+                    const sizes = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                    setForm(f => ({ ...f, sizes }));
+                  }}
+                  placeholder="XS, S, M, L, XL"
+                  style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.9rem' }}
+                />
               </div>
-            )}
-            <button type="button" onClick={addVariant} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <HiPlus /> Add Variant
-            </button>
+              <div>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Colors (comma separated)</label>
+                <input
+                  type="text"
+                  value={form.colors?.join(', ') || ''}
+                  onChange={e => {
+                    const colors = e.target.value.split(',').map(c => c.trim()).filter(Boolean);
+                    setForm(f => ({ ...f, colors }));
+                  }}
+                  placeholder="Black, White, Red"
+                  style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.9rem' }}
+                />
+              </div>
+            </div>
           </div>
           <button type="submit" className="btn btn-primary" disabled={loading} id="product-submit">
             <HiSave /> {loading ? 'Saving...' : isEdit ? 'Update Product' : 'Create Product'}
           </button>
         </form>
-        </main>
-      </div>
-    );
+      </main>
+    </div>
+  );
 }

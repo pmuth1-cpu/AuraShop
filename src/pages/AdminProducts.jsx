@@ -28,6 +28,7 @@ export default function AdminProducts() {
 
   const handleDelete = async (id, name) => {
     if (!confirm(`Delete "${name}"?`)) return;
+    if (!confirm(`Delete "${name}"?`)) return;
     try {
       await productAPI.delete(id);
       toast.success('Product deleted');
@@ -93,14 +94,14 @@ export default function AdminProducts() {
                       {catProducts.map(product => {
                         const img = (product.images && product.images.length > 0 ? product.images[product.imagePrimaryIndex || 0] : product.image) || '';
                         return (
-                          <div key={product._id} style={{ ...cardWrap }}>
+                          <div key={product._id} style={cardWrap}>
                             <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden', background: 'var(--bg-secondary)', cursor: 'pointer' }} onClick={() => window.location.href = `/manage-aura-369/products/edit/${product._id}`}>
                               {img ? (
                                 <img src={img} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                               ) : (
                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem' }}>📦</div>
                               )}
-                              {!product.inStock && <span className="badge out-of-stock" style={{ position: 'absolute', top: '10px', left: '10px' }}>Sold Out</span>}
+                              {!product.inStock && <span className="badge out-of-stock" style={{ position: 'absolute', top: '10px', left: '10px' }}>Pre-order</span>}
                             </div>
                             <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
                               <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.25 }}>{product.name}</div>

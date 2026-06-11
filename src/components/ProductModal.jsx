@@ -5,7 +5,8 @@ import { productAPI } from '../api';
 
 export default function ProductModal({ product, onClose, onSelectSimilar }) {
   const [qty, setQty] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
   const [similar, setSimilar] = useState([]);
   const [imageIndex, setImageIndex] = useState(0);
   const { addItem } = useCart();
@@ -13,7 +14,6 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
   const images = product?.images && product.images.length > 0 ? product.images : (product?.image ? [product.image] : []);
   const currentImage = images.length > 0 ? images[imageIndex] : '';
   const imagePrimaryIndex = typeof product?.imagePrimaryIndex === 'number' && product?.imagePrimaryIndex >= 0 && product?.imagePrimaryIndex < images.length ? product.imagePrimaryIndex : 0;
-  const oldPrice = product?.oldPrice && Number(product.oldPrice) > Number(product.price || 0) ? Number(product.oldPrice) : null;
 
   useEffect(() => {
     setImageIndex(imagePrimaryIndex);
@@ -22,6 +22,8 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
   useEffect(() => {
     if (product) {
       setQty(1);
+      setSelectedSize(null);
+      setSelectedColor(null);
       const minPrice = product.price * 0.8;
       const maxPrice = product.price * 1.2;
       productAPI.getAll({ minPrice, maxPrice, excludeId: product._id })
@@ -42,10 +44,12 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
   };
 
   const handleAdd = () => {
+    const variantInfo = [selectedSize, selectedColor].filter(Boolean).join(' / ');
     const productToAdd = {
       ...product,
-      selectedVariant,
-      variantInfo: selectedVariant ? `${selectedVariant.size || ''} ${selectedVariant.color || ''}`.trim() : null
+      selectedSize,
+      selectedColor,
+      variantInfo: variantInfo || null
     };
     addItem(productToAdd, qty);
     onClose();
@@ -83,26 +87,25 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
           <p className="modal-desc">{product.description}</p>
           <div className="modal-stock">
             <span className={`dot ${product.inStock ? 'in' : 'out'}`} />
-            <span>{product.inStock ? `In Stock (${product.stock})` : 'Out of Stock'}</span>
+            <span>{product.inStock ? 'In Stock' : 'Pre-order'}</span>
           </div>
-          {product.inStock && product.variants && product.variants.length > 0 && (
+          {!product.inStock && (
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>This item is available for pre-order. Delivery may take longer.</p>
+          )}
+          {product.sizes?.length > 0 && (
             <div style={{ margin: '12px 0' }}>
-              {product.variants.some(v => v.size) && (
-                <div style={{ marginBottom: '8px' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 500, marginRight: '8px' }}>Size:</span>
-                  {product.variants.filter(v => v.size).map((v, idx) => (
-                    <button key={`size-${idx}`} type="button" onClick={() => setSelectedVariant(v)} style={{ padding: '6px 12px', marginRight: '6px', marginBottom: '6px', background: selectedVariant === v ? 'var(--accent)' : 'var(--bg-secondary)', color: selectedVariant === v ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>{v.size}</button>
-                  ))}
-                </div>
-              )}
-              {product.variants.some(v => v.color) && (
-                <div>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 500, marginRight: '8px' }}>Color:</span>
-                  {product.variants.filter(v => v.color).map((v, idx) => (
-                    <button key={`color-${idx}`} type="button" onClick={() => setSelectedVariant(v)} style={{ padding: '6px 12px', marginRight: '6px', marginBottom: '6px', background: selectedVariant === v ? 'var(--accent)' : 'var(--bg-secondary)', color: selectedVariant === v ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>{v.color}</button>
-                  ))}
-                </div>
-              )}
+              <span style={{ fontSize: '0.9rem', fontWeight: 500, marginRight: '8px' }}>Size:</span>
+              {product.sizes.map((s, idx) => (
+                <button key={`size-${idx}`} type="button" onClick={() => setSelectedSize(s)} style={{ padding: '6px 12px', marginRight: '6px', marginBottom: '6px', background: selectedSize === s ? 'var(--accent)' : 'var(--bg-secondary)', color: selectedSize === s ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>{s}</button>
+              ))}
+            </div>
+          )}
+          {product.colors?.length > 0 && (
+            <div>
+              <span style={{ fontSize: '0.9rem', fontWeight: 500, marginRight: '8px' }}>Color:</span>
+              {product.colors.map((c, idx) => (
+                <button key={`color-${idx}`} type="button" onClick={() => setSelectedColor(c)} style={{ padding: '6px 12px', marginRight: '6px', marginBottom: '6px', background: selectedColor === c ? 'var(--accent)' : 'var(--bg-secondary)', color: selectedColor === c ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>{c}</button>
+              ))}
             </div>
           )}
           {images.length > 1 && (
@@ -143,3 +146,5 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
     </div>
   );
 }
+
+const oldPrice = product?.oldPrice && Number(product.oldPrice) > Number(product.price || 0) ? Number(product.oldPrice) : null;
