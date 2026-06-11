@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { HiArrowLeft, HiShoppingCart } from 'react-icons/hi';
-import { productAPI, categoryAPI } from '../../api';
-import { useCart } from '../../context/CartContext';
-import Navbar from '../../components/Navbar';
-import CartSidebar from '../../components/CartSidebar';
-import ProductModal from '../../components/ProductModal';
-import Footer from '../../components/Footer';
+import { productAPI, categoryAPI } from '../api';
+import { useCart } from '../context/CartContext';
+import Navbar from '../components/Navbar';
+import CartSidebar from '../components/CartSidebar';
+import ProductModal from '../components/ProductModal';
+import Footer from '../components/Footer';
 
 export default function CategoryPage() {
   const { categoryName } = useParams();
