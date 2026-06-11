@@ -17,6 +17,9 @@ export default function AdminProductForm() {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [variants, setVariants] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [showNewCat, setShowNewCat] = useState(false);
 
   useEffect(() => {
     if (isEdit) {
@@ -30,6 +33,10 @@ export default function AdminProductForm() {
       }).catch(() => toast.error('Product not found'));
     }
   }, [id, isEdit]);
+
+  useEffect(() => {
+    categoryAPI.getAll().then(r => setCategories(r.data)).catch(() => {});
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -140,7 +147,61 @@ export default function AdminProductForm() {
           </div>
           <div className="form-group">
             <label htmlFor="category">Category</label>
-            <input type="text" id="category" name="category" value={form.category} onChange={handleChange} required placeholder="e.g. Hoodies, Footwear" />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <select
+                id="category"
+                name="category"
+                value={form.category}
+                onChange={handleChange}
+                required
+                style={{ flex: 1, padding: '12px 16px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.95rem', cursor: 'pointer' }}
+              >
+                <option value="">Select category</option>
+                {categories.map(c => (
+                  <option key={c._id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowNewCat(v => !v)}
+                className="btn btn-secondary btn-sm"
+                title="Add new category"
+              >
+                +
+              </button>
+            </div>
+            {showNewCat && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                  placeholder="New category name"
+                  style={{ flex: 1, padding: '10px 14px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.9rem' }}
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!newCategoryName.trim()) return;
+                    try {
+                      const fd = new FormData();
+                      fd.append('name', newCategoryName.trim());
+                      const r = await categoryAPI.create(fd);
+                      setCategories([...categories, r.data]);
+                      setForm(f => ({ ...f, category: r.data.name }));
+                      setNewCategoryName('');
+                      setShowNewCat(false);
+                      toast.success('Category added');
+                    } catch {
+                      toast.error('Failed to add category');
+                    }
+                  }}
+                  className="btn btn-primary btn-sm"
+                >
+                  Add
+                </button>
+              </div>
+            )}
           </div>
           <div className="form-row">
             <div className="form-group">

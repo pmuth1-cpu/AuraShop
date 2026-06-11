@@ -6,27 +6,28 @@ import App from './App';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import CubeLoader from './components/CubeLoader';
+import IntroScreen from './components/IntroScreen';
 import './index.css';
 
 function Root() {
-  const [loading, setLoading] = useState(true);
+  const [introComplete, setIntroComplete] = useState(false);
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
-    // Hide loader once everything is loaded
-    const handleLoad = () => {
-      setLoading(false);
-    };
-    
+    const handleLoad = () => setAppReady(true);
     if (document.readyState === 'complete') {
-      setLoading(false);
+      setAppReady(true);
     } else {
       window.addEventListener('load', handleLoad);
     }
-    
     return () => window.removeEventListener('load', handleLoad);
   }, []);
 
-  if (loading) {
+  if (!introComplete) {
+    return <IntroScreen onComplete={() => setIntroComplete(true)} />;
+  }
+
+  if (!appReady) {
     return <CubeLoader />;
   }
 
