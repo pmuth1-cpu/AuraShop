@@ -1,14 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { HiSave, HiUpload, HiX } from 'react-icons/hi';
 import { productAPI, categoryAPI } from '../api';
 import AdminSidebar from '../components/AdminSidebar';
 import toast from 'react-hot-toast';
 
+const MAX_IMAGES = 10;
+
+const isImageUrl = (value) => /^https?:\/\/[^\s)]+\.(?:jpe?g|png|gif|webp)(?:\?[^\s)]*)?$/i.test(value) || /^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(value);
+
 export default function AdminProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = !!id;
+  const imageUploadRef = useRef(null);
 
   const [form, setForm] = useState({ 
     name: '', 
@@ -54,6 +59,85 @@ export default function AdminProductForm() {
     categoryAPI.getAll().then(r => setCategories(r.data)).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(src => {
+        if (src.startsWith('blob:')) URL.revokeObjectURL(src);
+      });
+    };
+  }, [imagePreviews]);
+
+  const addImageFiles = (files) => {
+    const remaining = MAX_IMAGES - imagePreviews.length;
+    if (remaining <= 0) {
+      toast.error(`You can add up to ${MAX_IMAGES} images`);
+      return;
+    }
+
+    const imageFilesToAdd = Array.from(files).filter(file => file.type.startsWith('image/')).slice(0, remaining);
+    if (imageFilesToAdd.length === 0) {
+      toast.error('Only image files are allowed');
+      return;
+    }
+
+    if (imageFilesToAdd.length < files.length) {
+      toast.error(`Only the first ${remaining} images were added`);
+    }
+
+    const urls = imageFilesToAdd.map(f => URL.createObjectURL(f));
+    setImageFiles(prev => [...prev, ...imageFilesToAdd]);
+    setImagePreviews(prev => [...prev, ...urls]);
+  };
+
+  const handleImage = (e) => {
+    addImageFiles(e.target.files || []);
+    e.target.value = '';
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    addImageFiles(e.dataTransfer.files || []);
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const clipboard = e.clipboardData;
+    const items = Array.from(clipboard?.items || []);
+    const imageItems = items.filter(item => item.kind === 'file' && item.type.startsWith('image/'));
+
+    if (imageItems.length > 0) {
+      addImageFiles(imageItems.map(item => item.getAsFile()).filter(Boolean));
+      return;
+    }
+
+    const remaining = MAX_IMAGES - imagePreviews.length;
+    if (remaining <= 0) {
+      toast.error(`You can add up to ${MAX_IMAGES} images`);
+      return;
+    }
+
+    const html = clipboard?.getData('text/html') || '';
+    const htmlUrls = Array.from(html.matchAll(/src=["']([^"']+)["']/gi)).map(match => match[1]).filter(isImageUrl);
+    const text = htmlUrls.length > 0 ? htmlUrls.join(' ') : (clipboard?.getData('text/plain') || clipboard?.getData('text/uri-list') || '');
+    const pastedUrls = text.split(/\s+/).map(value => value.trim()).filter(isImageUrl).slice(0, remaining);
+
+    if (pastedUrls.length > 0) {
+      setImagePreviews(prev => [...prev, ...pastedUrls]);
+      return;
+    }
+
+    toast.error('Paste an image file or image URL');
+  };
+
+  const removeImage = (index) => {
+    const removed = imagePreviews[index];
+    if (removed?.startsWith('blob:')) {
+      URL.revokeObjectURL(removed);
+      setImageFiles(prev => prev.filter((_, i) => i !== index));
+    }
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (type === 'radio') {
@@ -61,20 +145,6 @@ export default function AdminProductForm() {
     } else {
       setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
     }
-  };
-
-  const handleImage = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      const urls = files.map(f => URL.createObjectURL(f));
-      setImageFiles(prev => [...prev, ...files]);
-      setImagePreviews(prev => [...prev, ...urls]);
-    }
-  };
-
-  const removeImage = (index) => {
-    setImageFiles(prev => prev.filter((_, i) => i !== index));
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -94,8 +164,10 @@ export default function AdminProductForm() {
       imageFiles.forEach((file) => {
         fd.append('images', file);
       });
-      if (imagePreviews.length > 0 && imageFiles.length === 0) {
-        fd.append('images', JSON.stringify(imagePreviews));
+
+      const existingImageUrls = imagePreviews.filter(src => !src.startsWith('blob:'));
+      if (existingImageUrls.length > 0) {
+        fd.append('images', JSON.stringify(existingImageUrls));
       }
 
       if (isEdit) {
@@ -134,10 +206,18 @@ export default function AdminProductForm() {
                 ))}
               </div>
             )}
-            <div className="image-upload" style={{ padding: '24px' }}>
+            <div
+              ref={imageUploadRef}
+              className="image-upload"
+              tabIndex={0}
+              onPaste={handlePaste}
+              onDrop={handleDrop}
+              onDragOver={e => e.preventDefault()}
+              style={{ padding: '24px' }}
+            >
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <HiUpload size={32} style={{ color: 'var(--text-muted)' }} />
-                <p style={{ color: 'var(--text-muted)', margin: 0 }}>Click or drag to upload images</p>
+                <p style={{ color: 'var(--text-muted)', margin: 0 }}>Click, drag, or paste images</p>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>First image = primary (shown on cards)</p>
               </div>
               <input type="file" accept="image/*" multiple onChange={handleImage} />

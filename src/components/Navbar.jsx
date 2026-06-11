@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HiOutlineShoppingBag, HiOutlineMenu, HiSun, HiMoon, HiChevronDown } from 'react-icons/hi';
+import { categoryAPI } from '../api';
 import { useCart } from '../context/CartContext';
 
 export default function Navbar({ onOpenCategories }) {
@@ -25,10 +26,7 @@ export default function Navbar({ onOpenCategories }) {
   }, []);
 
   useEffect(() => {
-    fetch('/api/categories')
-      .then(r => r.json())
-      .then(data => setCategories(data))
-      .catch(() => {});
+    categoryAPI.getAll().then(r => setCategories(r.data)).catch(() => {});
   }, []);
 
   return (
@@ -73,6 +71,9 @@ export default function Navbar({ onOpenCategories }) {
           <button className="btn-icon cart-btn" onClick={() => setIsOpen(true)} id="cart-toggle">
             <HiOutlineShoppingBag size={20} />
             {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
+          </button>
+          <button className="mobile-categories-btn" onClick={onOpenCategories} id="mobile-categories-btn" title="Open categories">
+            <HiOutlineMenu size={20} />
           </button>
           <button className="mobile-menu-btn"><HiOutlineMenu /></button>
         </div>

@@ -17,7 +17,7 @@ export default function CategoryModal({ categories, onClose, onSelect }) {
             <div key={cat._id} className="category-card" onClick={() => { onSelect(cat.name); onClose(); }} style={{ cursor: 'pointer', borderRadius: 'var(--radius-lg)', overflow: 'hidden', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', transition: 'var(--transition)' }}>
               <div style={{ aspectRatio: '1/1', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {cat.image ? (
-                  <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={cat.image} alt={cat.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   <div style={{ fontSize: '3rem' }}>📁</div>
                 )}

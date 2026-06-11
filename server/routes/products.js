@@ -69,15 +69,17 @@ router.post('/upload-image', verifyToken, uploadMultiple.array('images'), async 
 
 router.post('/', verifyToken, uploadMultiple.array('images', 10), async (req, res) => {
   try {
-    let imageUrl = req.body.image || '';
-    const images = req.body.images ? JSON.parse(req.body.images) : [];
+    const uploadedImages = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-        const url = await uploadToCloudinary(file.buffer, 'products');
-        images.unshift(url);
+        uploadedImages.push(await uploadToCloudinary(file.buffer, 'products'));
       }
-      imageUrl = images[0];
     }
+
+    const existingImages = req.body.images ? JSON.parse(req.body.images) : [];
+    const images = [...uploadedImages, ...existingImages];
+    let imageUrl = images[0] || req.body.image || '';
+
     const price = Number(req.body.price);
     if (isNaN(price) || price < 0) {
       return res.status(400).json({ message: 'Valid price is required' });
@@ -113,12 +115,11 @@ router.put('/:id', verifyToken, uploadMultiple.array('images', 10), async (req, 
     let images = data.images ? (Array.isArray(data.images) ? data.images : JSON.parse(data.images)) : [];
     
     if (req.files && req.files.length > 0) {
-      const newUrls = [];
+      const uploadedImages = [];
       for (const file of req.files) {
-        const url = await uploadToCloudinary(file.buffer, 'products');
-        newUrls.push(url);
+        uploadedImages.push(await uploadToCloudinary(file.buffer, 'products'));
       }
-      images = [...newUrls, ...images];
+      images = [...uploadedImages, ...images];
     }
     
     if (images.length > 0) {

@@ -21,12 +21,26 @@ export async function connectDB() {
 export async function getAllProducts(filters = {}) {
   let query = {};
   if (filters.category && filters.category !== 'all') query.category = filters.category;
-  if (filters.search) query.name = { $regex: filters.search, $options: 'i' };
+  if (filters.search) {
+    const searchRegex = { $regex: filters.search, $options: 'i' };
+    query.$or = [
+      { name: searchRegex },
+      { description: searchRegex },
+    ];
+  }
   if (filters.featured === 'true') query.featured = true;
   if (filters.minPrice !== undefined) query.price = { $gte: Number(filters.minPrice) };
   if (filters.maxPrice !== undefined) query.price = { ...query.price, $lte: Number(filters.maxPrice) };
   if (filters.excludeId) query._id = { $ne: filters.excludeId };
-  const items = await Product.find(query).sort({ createdAt: -1 }).lean();
+
+  const skip = Number(filters.skip);
+  const limit = Number(filters.limit);
+  let productQuery = Product.find(query).sort({ createdAt: -1, _id: -1 });
+
+  if (!Number.isNaN(skip) && skip > 0) productQuery = productQuery.skip(skip);
+  if (!Number.isNaN(limit) && limit > 0) productQuery = productQuery.limit(Math.min(limit, 50));
+
+  const items = await productQuery.lean();
   return items.map(normalizeProduct);
 }
 

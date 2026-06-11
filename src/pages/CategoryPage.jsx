@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { HiArrowLeft, HiShoppingCart } from 'react-icons/hi';
 import { productAPI, categoryAPI } from '../api';
 import { useCart } from '../context/CartContext';
 import Navbar from '../components/Navbar';
 import CartSidebar from '../components/CartSidebar';
+import CategoryModal from '../components/CategoryModal';
 import ProductModal from '../components/ProductModal';
 import Footer from '../components/Footer';
 
 export default function CategoryPage() {
   const { categoryName } = useParams();
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const { addItem } = useCart();
 
   const decodedName = decodeURIComponent(categoryName.replace(/-/g, ' '));
@@ -21,13 +25,22 @@ export default function CategoryPage() {
     setLoading(true);
     Promise.all([
       productAPI.getAll({ category: decodedName }).then(r => setProducts(r.data)).catch(() => setProducts([])),
-      categoryAPI.getAll().catch(() => [])
+      categoryAPI.getAll().then(r => setCategories(r.data)).catch(() => setCategories([]))
     ]).finally(() => setLoading(false));
   }, [decodedName]);
 
+  const handleCategorySelect = (category) => {
+    setIsCategoryModalOpen(false);
+    if (category === 'all') {
+      navigate('/');
+      return;
+    }
+    navigate(`/category/${encodeURIComponent(category.replace(/\s+/g, '-'))}`);
+  };
+
   return (
     <>
-      <Navbar onOpenCategories={() => {}} />
+      <Navbar onOpenCategories={() => setIsCategoryModalOpen(true)} />
       <CartSidebar />
 
       <div className="container" style={{ paddingTop: '24px' }}>
@@ -59,7 +72,7 @@ export default function CategoryPage() {
                 <div className="product-card" key={product._id} onClick={() => setSelectedProduct(product)}>
                   <div className="product-card-image">
                     {img ? (
-                      <img src={img} alt={product.name} />
+                      <img src={img} alt={product.name} loading="lazy" decoding="async" />
                     ) : (
                       <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', background: 'var(--bg-secondary)' }}>📦</div>
                     )}
@@ -86,6 +99,9 @@ export default function CategoryPage() {
         )}
       </div>
 
+      {isCategoryModalOpen && (
+        <CategoryModal categories={categories} onClose={() => setIsCategoryModalOpen(false)} onSelect={handleCategorySelect} />
+      )}
       <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onSelectSimilar={setSelectedProduct} />
       <Footer />
     </>
