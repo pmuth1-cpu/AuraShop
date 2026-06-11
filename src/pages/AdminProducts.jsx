@@ -1,64 +1,50 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HiPlus, HiPencil, HiTrash } from 'react-icons/hi';
-import { productAPI } from '../api';
+import { productAPI, categoryAPI } from '../api';
 import AdminSidebar from '../components/AdminSidebar';
 import toast from 'react-hot-toast';
-import { sortData, getSortIcon } from '../utils/sorting';
-
-const PAGE_SIZE = 20;
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const fetchProducts = () => {
+  const fetchData = async () => {
     setLoading(true);
-    productAPI.getAll().then(r => setProducts(r.data)).catch(() => {}).finally(() => setLoading(false));
-  };
-
-  useEffect(fetchProducts, []);
-  useEffect(() => setCurrentPage(1), [sortBy, sortOrder]); // Reset to page 1 when sorting changes
-
-  const handleSort = (column) => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(column);
-      setSortOrder('asc');
+    try {
+      const [prodRes, catRes] = await Promise.all([productAPI.getAll(), categoryAPI.getAll()]);
+      setProducts(prodRes.data);
+      setCategories(catRes.data);
+    } catch {
+      toast.error('Failed to load products');
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleDelete = async (id, name) => {
     if (!confirm(`Delete "${name}"?`)) return;
     try {
-      console.log('Attempting to delete product:', id);
       await productAPI.delete(id);
-      console.log('Product deleted successfully');
       toast.success('Product deleted');
-      fetchProducts();
+      setProducts(prev => prev.filter(p => p._id !== id));
     } catch (err) {
-      console.error('Delete product failed:', err.response?.data || err.message);
       toast.error(err.response?.data?.message || 'Failed to delete');
     }
   };
 
-  // Sort and paginate
-  const sortedProducts = sortData(products, sortBy, sortOrder);
-  const totalPages = Math.ceil(sortedProducts.length / PAGE_SIZE);
-  const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedProducts = sortedProducts.slice(startIndex, startIndex + PAGE_SIZE);
+  const filtered = selectedCategory === 'all' ? products : products.filter(p => p.category === selectedCategory);
+  const grouped = categories.reduce((acc, cat) => {
+    acc[cat.name] = filtered.filter(p => p.category === cat.name);
+    return acc;
+  }, {});
 
-  // Sort column helper
-  const SortHeader = ({ column, label }) => (
-    <th onClick={() => handleSort(column)} style={{ cursor: 'pointer', userSelect: 'none' }}>
-      {label}
-      {getSortIcon(column, sortBy, sortOrder)}
-    </th>
-  );
+  const visibleCategories = selectedCategory === 'all' ? categories : categories.filter(c => c.name === selectedCategory);
+  const visibleProducts = selectedCategory === 'all' ? products : filtered;
 
   return (
     <div className="admin-layout">
@@ -68,66 +54,83 @@ export default function AdminProducts() {
           <h1>Products</h1>
           <Link to="/manage-aura-369/products/new" className="btn btn-primary btn-sm"><HiPlus /> Add Product</Link>
         </div>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '28px' }}>
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className="filter-chip"
+            style={selectedCategory === 'all' ? { background: 'rgba(139,92,246,0.12)', color: 'var(--accent-light)', borderColor: 'var(--accent)' } : {}}
+          >
+            All
+          </button>
+          {categories.map(c => (
+            <button
+              key={c._id}
+              onClick={() => setSelectedCategory(c.name)}
+              className="filter-chip"
+              style={selectedCategory === c.name ? { background: 'rgba(139,92,246,0.12)', color: 'var(--accent-light)', borderColor: 'var(--accent)' } : {}}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+
         {loading ? <div className="spinner" /> : (
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead><tr>
-                <SortHeader column="name" label="Product" />
-                <SortHeader column="category" label="Category" />
-                <SortHeader column="price" label="Price" />
-                <SortHeader column="stock" label="Stock" />
-                <SortHeader column="featured" label="Featured" />
-                <th>Status</th>
-                <th>Actions</th>
-              </tr></thead>
-              <tbody>
-                {paginatedProducts.map(p => (
-                  <tr key={p._id}>
-                    <td><div className="product-cell"><div className="product-thumb">{p.image && <img src={p.image} alt="" />}</div><span>{p.name}</span></div></td>
-                    <td>{p.category}</td>
-                    <td>${p.price.toFixed(2)}</td>
-                    <td>{p.stock}</td>
-                    <td>{p.featured ? '⭐' : '○'}</td>
-                    <td><span className={`stock-badge ${p.inStock ? 'in' : 'out'}`}>{p.inStock ? 'In Stock' : 'Out'}</span></td>
-                    <td>
-                      <div className="actions">
-                        <Link to={`/manage-aura-369/products/edit/${p._id}`} className="btn-icon" title="Edit"><HiPencil /></Link>
-                        <button className="btn-icon" onClick={() => handleDelete(p._id, p.name)} title="Delete" style={{ color: 'var(--danger)' }}><HiTrash /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {sortedProducts.length === 0 && (
-              <div className="empty-state">
-                <p>No products found. <Link to="/manage-aura-369/products/new">Create one</Link></p>
+          <>
+            {visibleProducts.length === 0 ? (
+              <div style={{ color: 'var(--text-muted)', padding: '40px 0', textAlign: 'center' }}>
+                No products found.
               </div>
+            ) : (
+              visibleCategories.map(cat => {
+                const catProducts = grouped[cat.name] || [];
+                if (selectedCategory !== 'all' && catProducts.length === 0) return null;
+                if (catProducts.length === 0) return null;
+                return (
+                  <div key={cat.name} style={{ marginBottom: '40px' }}>
+                    <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-primary)' }}>{cat.name}</h3>
+                    <div className="products-grid">
+                      {catProducts.map(product => {
+                        const img = (product.images && product.images.length > 0 ? product.images[product.imagePrimaryIndex || 0] : product.image) || '';
+                        return (
+                          <div key={product._id} style={{ ...cardWrap }}>
+                            <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden', background: 'var(--bg-secondary)', cursor: 'pointer' }} onClick={() => window.location.href = `/manage-aura-369/products/edit/${product._id}`}>
+                              {img ? (
+                                <img src={img} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                              ) : (
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem' }}>📦</div>
+                              )}
+                              {!product.inStock && <span className="badge out-of-stock" style={{ position: 'absolute', top: '10px', left: '10px' }}>Sold Out</span>}
+                            </div>
+                            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.25 }}>{product.name}</div>
+                              <div style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 700 }}>${product.price.toFixed(2)}</div>
+                              <div style={{ marginTop: 'auto', display: 'flex', gap: '8px' }}>
+                                <Link to={`/manage-aura-369/products/edit/${product._id}`} className="btn-icon" title="Edit" style={{ width: '32px', height: '32px', fontSize: '0.9rem' }}><HiPencil /></Link>
+                                <button className="btn-icon" onClick={() => handleDelete(product._id, product.name)} title="Delete" style={{ width: '32px', height: '32px', fontSize: '0.9rem', color: 'var(--danger)' }}><HiTrash /></button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
             )}
-          </div>
-        )}
-        {!loading && sortedProducts.length > 0 && (
-          <div className="pagination">
-            <button 
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-              disabled={currentPage === 1}
-              className="btn btn-secondary btn-sm"
-            >
-              ← Previous
-            </button>
-            <div className="pagination-info">
-              Page {currentPage} of {totalPages} ({sortedProducts.length} items)
-            </div>
-            <button 
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
-              disabled={currentPage === totalPages}
-              className="btn btn-secondary btn-sm"
-            >
-              Next →
-            </button>
-          </div>
+          </>
         )}
       </main>
     </div>
   );
 }
+
+const cardWrap = {
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-glass)',
+  borderRadius: 'var(--radius-lg)',
+  overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
+  width: '220px'
+};

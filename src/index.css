@@ -273,8 +273,6 @@ input[type="range"]::-moz-range-thumb{ width: 18px; height: 18px; border-radius:
 @keyframes orbPulse{0%,100%{transform:scale(1) translate(0,0);opacity:0.45}50%{transform:scale(1.18) translate(12px,-16px);opacity:0.75}}
 
 .intro-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:28px}
-.intro-logo-wrap{display:flex;align-items:center;gap:22px}
-.intro-logo{-webkit-filter:drop-shadow(0 0 22px rgba(139,92,246,0.55));filter:drop-shadow(0 0 22px rgba(139,92,246,0.55))}
 .intro-text{display:flex;flex-direction:column}
 .intro-title{font-family:var(--font-display);font-size:3.8rem;font-weight:800;letter-spacing:-0.04em;opacity:0;transform:translateY(18px) scale(0.96);transition:all 0.75s cubic-bezier(0.4,0,0.2,1);background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1}
 .intro-title.visible{opacity:1;transform:translateY(0) scale(1)}
