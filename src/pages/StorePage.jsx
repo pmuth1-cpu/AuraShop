@@ -173,7 +173,7 @@ export default function StorePage() {
       <Navbar onOpenCategories={() => setIsCategoryModalOpen(true)} />
       <CartSidebar />
 
-      <section className="hero" style={{ position: 'relative' }}>
+      <section className="hero" style={{ position: 'relative', background: 'var(--bg-primary)' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.7, pointerEvents: 'none' }}>
           <DemoOne />
         </div>

@@ -121,6 +121,7 @@ export function normalizeProduct(item) {
     images: mergedImages,
     imagePrimaryIndex: primaryIdx,
     image: item.image || mergedImages[0] || '',
+    price: item.price != null ? Number(item.price) : 0,
   };
 }
 
