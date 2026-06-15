@@ -28,10 +28,10 @@ function getCJMaxSellingPrice() {
 function calculateCJSellingPrice(cjPrice, markupPercent = 60) {
   const maxSelling = getCJMaxSellingPrice();
   const parsed = Number(cjPrice);
-  if (Number.isNaN(parsed) || parsed <= 0) return String(0);
+  if (Number.isNaN(parsed) || parsed <= 0) return 0;
   const withMarkup = parsed * (1 + markupPercent / 100);
   const capped = Math.min(withMarkup, maxSelling);
-  return String(Math.round(capped * 100) / 100);
+  return Math.round(capped * 100) / 100;
 }
 
 function getCJApiKey() {
