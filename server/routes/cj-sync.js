@@ -1,24 +1,22 @@
 import express from 'express';
-import { getCJProducts, searchCJProducts, getCJProductDetail, mapCJProduct } from '../services/cj-dropshipping.js';
+import { getCJProducts, searchCJProducts, getCJProductDetail, mapCJProduct, productListFromResponse } from '../services/cj-dropshipping.js';
 import { createProduct, getAllProducts } from '../db.js';
 import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Step 1: Browse CJ catalog (returns previews, does NOT save to DB)
 router.post('/browse', verifyToken, async (req, res) => {
   try {
     const { keyword, page = 1, pageSize = 50 } = req.body;
-
     const response = keyword
       ? await searchCJProducts(keyword, page, pageSize)
       : await getCJProducts(page, pageSize);
 
-    const cjProducts = response.data?.list || response.list || response.data?.products || [];
+    const cjProducts = productListFromResponse(response);
 
-    const previews = cjProducts.slice(0, pageSize).map(cjProduct => {
+    const previews = cjProducts.slice(0, Number(pageSize) || 50).map(cjProduct => {
       const mapped = mapCJProduct(cjProduct);
-      const cjId = String(cjProduct.productId || cjProduct.id);
+      const cjId = String(cjProduct.pid || cjProduct.productId || cjProduct.id || cjProduct.productSku || cjProduct.sku);
 
       return {
         cjId,
@@ -33,14 +31,16 @@ router.post('/browse', verifyToken, async (req, res) => {
       };
     });
 
-    res.json({ products: previews, total: cjProducts.length });
+    res.json({
+      products: previews,
+      total: response?.totalRecords || response?.total || cjProducts.length,
+    });
   } catch (err) {
     console.error('CJ browse error:', err);
     res.status(500).json({ message: 'Browse failed', error: err.message });
   }
 });
 
-// Step 2: Import ONLY selected products into store
 router.post('/import-selected', verifyToken, async (req, res) => {
   try {
     const { selectedCjIds } = req.body;
@@ -84,7 +84,6 @@ router.post('/import-selected', verifyToken, async (req, res) => {
   }
 });
 
-// Resync single product
 router.post('/resync/:id', verifyToken, async (req, res) => {
   try {
     const product = await getAllProducts({

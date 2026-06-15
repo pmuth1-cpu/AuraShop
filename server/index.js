@@ -9,6 +9,7 @@ import productRoutes from './routes/products.js';
 import categoryRoutes from './routes/categories.js';
 import cjSyncRoutes from './routes/cj-sync.js';
 
+dotenv.config({ path: '.env.local' });
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);

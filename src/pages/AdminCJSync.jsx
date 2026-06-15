@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import API from '../api';
 import toast from 'react-hot-toast';
 import AdminSidebar from '../components/AdminSidebar';
 
@@ -23,8 +23,8 @@ export default function AdminCJSync() {
     setImportResult(null);
     setExpandedId(null);
     try {
-      const res = await axios.post(
-        '/api/cj-sync/browse',
+      const res = await API.post(
+        '/cj-sync/browse',
         { keyword: keyword || undefined, pageSize },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -62,8 +62,8 @@ export default function AdminCJSync() {
     setImporting(true);
     setImportResult(null);
     try {
-      const res = await axios.post(
-        '/api/cj-sync/import-selected',
+      const res = await API.post(
+        '/cj-sync/import-selected',
         { selectedCjIds: Array.from(selectedIds) },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -47,7 +47,10 @@ router.get('/verify', verifyToken, (req, res) => {
 });
 
 router.post('/reset-admin', async (req, res) => {
-  const ADMIN_SECRET = process.env.ADMIN_RESET_SECRET || 'reset-secret-369';
+  const ADMIN_SECRET = process.env.ADMIN_RESET_SECRET;
+  if (!ADMIN_SECRET) {
+    return res.status(500).json({ message: 'ADMIN_RESET_SECRET is not configured.' });
+  }
   if (req.headers['x-reset-secret'] !== ADMIN_SECRET) {
     return res.status(403).json({ message: 'Unauthorized' });
   }

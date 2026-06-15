@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { HiSearch, HiShoppingCart } from 'react-icons/hi';
 import { SiTelegram } from 'react-icons/si';
 import { productAPI, categoryAPI } from '../api';
@@ -65,8 +66,10 @@ export default function StorePage() {
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -74,8 +77,10 @@ export default function StorePage() {
   const [page, setPage] = useState(1);
   const { addItem } = useCart();
   const loaderRef = useRef(null);
+  const navigate = useNavigate();
 
-  // Initial load: fetch first PAGE_SIZE products
+  const categorySlug = (category) => encodeURIComponent(category.replace(/\s+/g, '-'));
+
   const fetchProducts = useCallback(async (pageNum, reset = false) => {
     if (reset) setLoading(true);
     else setLoadingMore(true);
@@ -84,6 +89,7 @@ export default function StorePage() {
       limit: PAGE_SIZE,
       skip: (pageNum - 1) * PAGE_SIZE,
     };
+    if (selectedCategory) params.category = selectedCategory;
     if (search.trim()) params.search = search.trim();
     if (maxPrice.trim()) params.maxPrice = maxPrice;
 
@@ -99,15 +105,14 @@ export default function StorePage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [search, maxPrice]);
+  }, [search, maxPrice, selectedCategory]);
 
   useEffect(() => {
     setProducts([]);
     setPage(1);
     fetchProducts(1, true);
-  }, [search, maxPrice]);
+  }, [search, maxPrice, selectedCategory, fetchProducts]);
 
-  // Intersection Observer for infinite scroll
   useEffect(() => {
     if (!loaderRef.current || !hasMore || loading || loadingMore) return;
 
@@ -125,12 +130,41 @@ export default function StorePage() {
   }, [hasMore, loading, loadingMore, page, fetchProducts]);
 
   useEffect(() => {
+    const productCategories = [...new Set(products.map(product => product.category).filter(Boolean))];
+    if (productCategories.length === 0) return;
+
+    setCategories(prev => {
+      const existing = new Map(prev.map(category => [category.name, category]));
+      productCategories.forEach(name => {
+        if (!existing.has(name)) existing.set(name, { _id: name, name, image: '' });
+      });
+      return [...existing.values()];
+    });
+  }, [products]);
+
+  useEffect(() => {
     categoryAPI.getAll().then(r => setCategories(r.data)).catch(() => {});
   }, []);
 
   const handleCategorySelect = (category) => {
     setIsCategoryModalOpen(false);
+    if (category === 'all') {
+      setSelectedCategory('');
+      navigate('/');
+      return;
+    }
+    setSelectedCategory(category);
+    navigate(`/category/${categorySlug(category)}`);
   };
+
+  const handleChipSelect = (category) => {
+    setSelectedCategory(category);
+    setPage(1);
+    document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const visibleCategories = showAllCategories ? categories : categories.slice(0, 6);
+  const canViewMoreCategories = categories.length > 6;
 
   return (
     <>
@@ -160,6 +194,36 @@ export default function StorePage() {
             </div>
           </div>
 
+          {categories.length > 0 && (
+            <div className="category-section" style={{ marginBottom: '32px' }}>
+              <div className="category-section-header">
+                <h3>{selectedCategory ? selectedCategory : 'Shop by Category'}</h3>
+                {canViewMoreCategories && (
+                  <button className="view-more-btn" onClick={() => setShowAllCategories(v => !v)}>
+                    {showAllCategories ? 'Show Less' : 'View More'}
+                  </button>
+                )}
+              </div>
+              <div className="filter-bar">
+                <button
+                  className={`filter-chip ${!selectedCategory ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory('')}
+                >
+                  All Products
+                </button>
+                {visibleCategories.map(cat => (
+                  <button
+                    key={cat._id}
+                    className={`filter-chip ${selectedCategory === cat.name ? 'active' : ''}`}
+                    onClick={() => handleChipSelect(cat.name)}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '32px' }}>
             <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Max Price:</span>
             <input type="range" min="0" max="500" step="1" value={maxPrice || 500} onChange={e => setMaxPrice(e.target.value === '500' ? '' : e.target.value)} style={{ width: '140px', accentColor: 'var(--accent)' }} />
@@ -176,6 +240,7 @@ export default function StorePage() {
           ) : products.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '1.2rem' }}>No products found</p>
+              {selectedCategory && <Link to="/" className="btn btn-secondary">View All Products</Link>}
             </div>
           ) : (
             <div className="products-grid">
@@ -194,7 +259,6 @@ export default function StorePage() {
             </div>
           )}
 
-          {/* Infinite scroll trigger + Load More button */}
           {!loading && hasMore && (
             <div style={{ textAlign: 'center', marginTop: '40px' }}>
               <button

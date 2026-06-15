@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const RESET_SECRET = import.meta.env.VITE_RESET_SECRET;
 
 const API = axios.create({ baseURL: API_BASE });
 
@@ -34,7 +35,7 @@ export const categoryAPI = {
 export const authAPI = {
   login: (credentials) => API.post('/auth/login', credentials),
   verify: () => API.get('/auth/verify'),
-  resetAdmin: () => API.post('/auth/reset-admin', {}, { headers: { 'x-reset-secret': 'reset-secret-369' } }),
+  resetAdmin: () => API.post('/auth/reset-admin', {}, { headers: { 'x-reset-secret': RESET_SECRET } }),
 };
 
 export default API;
