@@ -71,7 +71,7 @@ export default function DemoOne() {
         <div className="relative z-10 flex flex-row items-stretch gap-3">
           {[col1, col2, col3, col4, col5].map((col, i) => (
             <div key={i} className="marquee-col">
-              <div className="marquee-track flex flex-col gap-3">
+              <div className="marquee-track flex flex-col gap-3" style={{ animationDirection: i % 2 === 0 ? 'reverse' : 'normal' } as React.CSSProperties}>
                 {[...col, ...col].map((product, idx) => (
                   <ProductCard key={`${product.name}-${i}-${idx}`} img={product.img} name={product.name} />
                 ))}
