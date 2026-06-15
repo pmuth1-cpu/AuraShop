@@ -70,7 +70,6 @@ export default function StorePage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
-  const [randomize, setRandomize] = useState(false);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -89,9 +88,9 @@ export default function StorePage() {
     const params = {
       limit: PAGE_SIZE,
       skip: (pageNum - 1) * PAGE_SIZE,
+      random: 'true',
     };
     if (selectedCategory) params.category = selectedCategory;
-    if (randomize) params.random = 'true';
     if (search.trim()) params.search = search.trim();
     if (maxPrice.trim()) params.maxPrice = maxPrice;
 
@@ -107,13 +106,13 @@ export default function StorePage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [search, maxPrice, selectedCategory, randomize]);
+  }, [search, maxPrice, selectedCategory]);
 
   useEffect(() => {
     setProducts([]);
     setPage(1);
     fetchProducts(1, true);
-  }, [search, maxPrice, selectedCategory, randomize, fetchProducts]);
+  }, [search, maxPrice, selectedCategory, fetchProducts]);
 
   useEffect(() => {
     if (!loaderRef.current || !hasMore || loading || loadingMore) return;
@@ -204,9 +203,6 @@ export default function StorePage() {
               <div className="category-section-header">
                 <h3>{selectedCategory ? selectedCategory : 'Shop by Category'}</h3>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button className="view-more-btn" onClick={() => setRandomize(v => !v)} style={{ borderColor: randomize ? 'var(--accent)' : 'var(--border-glass)' }}>
-                    {randomize ? 'Random On' : 'Random'}
-                  </button>
                   {canViewMoreCategories && (
                     <button className="view-more-btn" onClick={() => setShowAllCategories(v => !v)}>
                       {showAllCategories ? 'Show Less' : 'View More'}
