@@ -173,16 +173,16 @@ export default function StorePage() {
       <Navbar onOpenCategories={() => setIsCategoryModalOpen(true)} />
       <CartSidebar />
 
-      <section className="hero" style={{ position: 'relative' }}>
+      <section className="hero" style={{ position: 'relative', background: '#ffffff' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.7, pointerEvents: 'none' }}>
           <DemoOne />
         </div>
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
-          <h1>Discover Your <span>Aura</span></h1>
-          <p>Premium streetwear and lifestyle essentials curated for those who dare to stand out.</p>
-          <div className="hero-actions">
-            <a href="#products" className="btn btn-primary">Shop Now</a>
-            <a href="https://t.me/aurashop369" className="btn btn-secondary" target="_blank" rel="noreferrer">
+          <h1 style={{ color: '#0f172a', fontFamily: 'var(--font-display)', fontSize: 'clamp(2.5rem,6vw,4.5rem)', fontWeight: 800, lineHeight: 1.1, marginBottom: '20px', position: 'relative', animation: 'hero-glow 3s ease-in-out infinite' }}>Discover Your <span style={{ background: 'linear-gradient(135deg,#8b5cf6,#06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Aura</span></h1>
+          <p style={{ color: '#475569', fontSize: '1.15rem', maxWidth: '560px', margin: '0 auto 36px', animation: 'hero-glow 3s ease-in-out infinite 0.5s' }}>Premium streetwear and lifestyle essentials curated for those who dare to stand out.</p>
+          <div className="hero-actions" style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', animation: 'hero-glow 3s ease-in-out infinite 1s' }}>
+            <a href="#products" className="btn btn-primary" style={{ animation: 'hero-glow 3s ease-in-out infinite 1.5s' }}>Shop Now</a>
+            <a href="https://t.me/aurashop369" className="btn btn-secondary" target="_blank" rel="noreferrer" style={{ animation: 'hero-glow 3s ease-in-out infinite 1.5s' }}>
               <SiTelegram /> Contact Us
             </a>
           </div>
