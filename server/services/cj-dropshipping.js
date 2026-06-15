@@ -11,6 +11,29 @@ function clampPageSize(pageSize) {
   return Math.min(Math.max(value, 1), 100);
 }
 
+function getCJMarkupPercent() {
+  const envValue = process.env.CJ_MARKUP_PERCENT || process.env.VITE_CJ_MARKUP_PERCENT;
+  const parsed = Number(envValue);
+  if (!Number.isNaN(parsed) && parsed >= 0) return parsed;
+  return 60;
+}
+
+function getCJMaxSellingPrice() {
+  const envValue = process.env.CJ_MAX_SELLING_PRICE || process.env.VITE_CJ_MAX_SELLING_PRICE;
+  const parsed = Number(envValue);
+  if (!Number.isNaN(parsed) && parsed > 0) return parsed;
+  return 500;
+}
+
+function calculateCJSellingPrice(cjPrice, markupPercent = 60) {
+  const maxSelling = getCJMaxSellingPrice();
+  const parsed = Number(cjPrice);
+  if (Number.isNaN(parsed) || parsed <= 0) return String(0);
+  const withMarkup = parsed * (1 + markupPercent / 100);
+  const capped = Math.min(withMarkup, maxSelling);
+  return String(Math.round(capped * 100) / 100);
+}
+
 function getCJApiKey() {
   const key = process.env.CJ_API_TOKEN || process.env.CJ_API_KEY;
   if (!key) throw new Error('CJ_API_TOKEN not set in .env');
@@ -184,28 +207,37 @@ export function mapCJProduct(cjProduct) {
   const description = sanitizeCJDescription(cjProduct.description || '');
   const categories = productCategories(cjProduct);
   const images = [...new Set([...productImages(cjProduct), ...extractDescriptionImages(cjProduct.description || '')])].slice(0, 10);
+  const markupPercent = getCJMarkupPercent();
+  const rawPrice = productPrice(cjProduct);
+  const sellingPrice = calculateCJSellingPrice(rawPrice, markupPercent);
   const variants = Array.isArray(cjProduct.variants)
-    ? cjProduct.variants.map(variant => ({
-        sku: variant.variantSku || variant.sku || '',
-        size: variant.variantKey || variant.variantNameEn || '',
-        color: '',
-        price: String(firstValue(variant.variantSellPrice, cjProduct.sellPrice, cjProduct.nowPrice, cjProduct.price, 0)),
-        stock: variantStock(variant),
-      }))
-    : (cjProduct.skuList || []).map(sku => ({
-        sku: sku.sku || sku.variantSku || '',
-        size: sku.specs?.Size || sku.specs?.size || sku.size || '',
-        color: sku.specs?.Color || sku.specs?.color || sku.color || '',
-        price: String(firstValue(sku.price, sku.variantSellPrice, cjProduct.sellPrice, cjProduct.nowPrice, 0)),
-        stock: variantStock(sku),
-      }));
+    ? cjProduct.variants.map(variant => {
+        const raw = firstValue(variant.variantSellPrice, cjProduct.sellPrice, cjProduct.nowPrice, cjProduct.price, 0);
+        return {
+          sku: variant.variantSku || variant.sku || '',
+          size: variant.variantKey || variant.variantNameEn || '',
+          color: '',
+          price: calculateCJSellingPrice(raw, markupPercent),
+          stock: variantStock(variant),
+        };
+      })
+    : (cjProduct.skuList || []).map(sku => {
+        const raw = firstValue(sku.price, sku.variantSellPrice, cjProduct.sellPrice, cjProduct.nowPrice, 0);
+        return {
+          sku: sku.sku || sku.variantSku || '',
+          size: sku.specs?.Size || sku.specs?.size || sku.size || '',
+          color: sku.specs?.Color || sku.specs?.color || sku.color || '',
+          price: calculateCJSellingPrice(raw, markupPercent),
+          stock: variantStock(sku),
+        };
+      });
 
   return {
     name: firstValue(cjProduct.nameEn, cjProduct.productNameEn, cjProduct.productName, 'Imported Product'),
     description,
     category: categories[0] || 'Imported',
     categories,
-    price: productPrice(cjProduct),
+    price: sellingPrice,
     images,
     variants,
     inStock: productStock(cjProduct) > 0 || variants.some(variant => variant.stock > 0),
@@ -218,7 +250,8 @@ export function mapCJProduct(cjProduct) {
         deliveryDays: firstValue(cjProduct.deliveryCycle, cjProduct.deliveryDays, null),
       },
       lastSynced: new Date(),
-      markupPercent: 60,
+      markupPercent,
+      rawPrice,
     },
   };
 }

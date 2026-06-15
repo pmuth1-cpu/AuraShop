@@ -9,6 +9,7 @@ import CartSidebar from '../components/CartSidebar';
 import CategoryModal from '../components/CategoryModal';
 import ProductModal from '../components/ProductModal';
 import Footer from '../components/Footer';
+import DemoOne from '../components/ui/demo';
 
 const PAGE_SIZE = 8;
 
@@ -172,8 +173,11 @@ export default function StorePage() {
       <Navbar onOpenCategories={() => setIsCategoryModalOpen(true)} />
       <CartSidebar />
 
-      <section className="hero">
-        <div className="container">
+      <section className="hero" style={{ position: 'relative' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.7, pointerEvents: 'none' }}>
+          <DemoOne />
+        </div>
+        <div className="container" style={{ position: 'relative', zIndex: 10 }}>
           <h1>Discover Your <span>Aura</span></h1>
           <p>Premium streetwear and lifestyle essentials curated for those who dare to stand out.</p>
           <div className="hero-actions">
@@ -181,6 +185,20 @@ export default function StorePage() {
             <a href="https://t.me/aurashop369" className="btn btn-secondary" target="_blank" rel="noreferrer">
               <SiTelegram /> Contact Us
             </a>
+          </div>
+        </div>
+      </section>
+
+      <section style={{ padding: '0 0 40px' }}>
+        <div className="container">
+          <div className="glass" style={{ padding: '24px', borderRadius: '24px' }}>
+            <div className="section-header" style={{ marginBottom: '12px' }}>
+              <div>
+                <p className="section-title" style={{ fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--accent-light)' }}>Featured picks</p>
+                <h2 className="section-title">Aura <span>Product Spotlight</span></h2>
+              </div>
+            </div>
+            <DemoOne />
           </div>
         </div>
       </section>

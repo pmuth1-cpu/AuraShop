@@ -1,6 +1,6 @@
 import express from 'express';
 import { getCJProducts, searchCJProducts, getCJProductDetail, mapCJProduct, productListFromResponse } from '../services/cj-dropshipping.js';
-import { createProduct, getAllProducts } from '../db.js';
+import { createProduct, getAllProducts, updateProduct } from '../db.js';
 import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -106,7 +106,6 @@ router.post('/resync/:id', verifyToken, async (req, res) => {
     const cjProduct = detail.data || detail;
     const mapped = mapCJProduct(cjProduct);
 
-    const { updateProduct } = await import('../db.js');
     const updated = await updateProduct(product[0]._id, {
       ...mapped,
       source: { ...mapped.source, lastSynced: new Date() },
