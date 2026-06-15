@@ -189,20 +189,6 @@ export default function StorePage() {
         </div>
       </section>
 
-      <section style={{ padding: '0 0 40px' }}>
-        <div className="container">
-          <div className="glass" style={{ padding: '24px', borderRadius: '24px' }}>
-            <div className="section-header" style={{ marginBottom: '12px' }}>
-              <div>
-                <p className="section-title" style={{ fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--accent-light)' }}>Featured picks</p>
-                <h2 className="section-title">Aura <span>Product Spotlight</span></h2>
-              </div>
-            </div>
-            <DemoOne />
-          </div>
-        </div>
-      </section>
-
       <section id="products" style={{ padding: '40px 0 80px' }}>
         <div className="container">
           <div className="section-header" style={{ marginBottom: '24px' }}>
