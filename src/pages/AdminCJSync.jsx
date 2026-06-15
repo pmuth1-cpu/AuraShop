@@ -12,6 +12,7 @@ export default function AdminCJSync() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [importResult, setImportResult] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [randomize, setRandomize] = useState(true);
 
   const token = localStorage.getItem('aura_token');
 
@@ -25,7 +26,7 @@ export default function AdminCJSync() {
     try {
       const res = await API.post(
         '/cj-sync/browse',
-        { keyword: keyword || undefined, pageSize },
+        { keyword: keyword || undefined, pageSize, random: randomize },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCjProducts(res.data.products || []);
@@ -105,6 +106,13 @@ export default function AdminCJSync() {
             <option value="50" selected>50 per page</option>
             <option value="100">100 per page</option>
           </select>
+          <button
+            type="button"
+            onClick={() => setRandomize(v => !v)}
+            style={{ padding: '10px 14px', background: randomize ? 'rgba(139,92,246,0.12)' : 'var(--bg-card)', border: randomize ? '1px solid var(--accent)' : '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)' }}
+          >
+            {randomize ? 'Random On' : 'Random Off'}
+          </button>
           <button className="btn btn-primary" onClick={handleBrowse} disabled={loading}>
             {loading ? 'Browsing CJ...' : 'Browse Catalog'}
           </button>

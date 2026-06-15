@@ -12,6 +12,7 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
   const { addItem } = useCart();
 
   const images = product?.images && product.images.length > 0 ? product.images : (product?.image ? [product.image] : []);
+  const categories = product?.categories?.length ? product.categories : [product?.category].filter(Boolean);
   const currentImage = images.length > 0 ? images[imageIndex] : '';
   const imagePrimaryIndex = typeof product?.imagePrimaryIndex === 'number' && product?.imagePrimaryIndex >= 0 && product?.imagePrimaryIndex < images.length ? product.imagePrimaryIndex : 0;
 
@@ -78,12 +79,12 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
           )}
         </div>
         <div className="modal-details">
-          <span className="modal-category">{product.category}</span>
+          <span className="modal-category">{categories.join(' / ')}</span>
           <h2 className="modal-name">{product.name}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span className="modal-price">${Number(product.price).toFixed(2)}</span>
           </div>
-          <p className="modal-desc">{product.description}</p>
+          <p className="modal-desc" style={{ whiteSpace: 'pre-wrap' }}>{product.description}</p>
           <div className="modal-stock">
             <span className={`dot ${product.inStock ? 'in' : 'out'}`} />
             <span>{product.inStock ? 'In Stock' : 'Pre-order'}</span>
@@ -110,7 +111,7 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
           {images.length > 1 && (
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>{imageIndex + 1} / {images.length} images</p>
           )}
-          {product.inStock && (
+          {product.inStock ? (
             <>
               <div className="qty-control">
                 <button onClick={() => setQty(q => Math.max(1, q - 1))}><HiMinus /></button>
@@ -119,6 +120,17 @@ export default function ProductModal({ product, onClose, onSelectSimilar }) {
               </div>
               <button className="btn btn-primary" onClick={handleAdd} id="modal-add-cart">
                 <HiShoppingCart /> Add to Cart — ${(product.price * qty).toFixed(2)}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="qty-control">
+                <button onClick={() => setQty(q => Math.max(1, q - 1))}><HiMinus /></button>
+                <span>{qty}</span>
+                <button onClick={() => setQty(q => q + 1)}><HiPlus /></button>
+              </div>
+              <button className="btn btn-primary" onClick={handleAdd} id="modal-add-cart">
+                <HiShoppingCart /> Pre-order — ${(product.price * qty).toFixed(2)}
               </button>
             </>
           )}

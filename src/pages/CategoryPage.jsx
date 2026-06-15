@@ -22,9 +22,21 @@ export default function CategoryPage() {
   const decodedName = decodeURIComponent(categoryName.replace(/-/g, ' '));
 
   useEffect(() => {
+    const productCategories = [...new Set(products.flatMap(product => product.categories?.length ? product.categories : [product.category]).filter(Boolean))];
+    if (productCategories.length === 0) return;
+    setCategories(prev => {
+      const existing = new Map(prev.map(category => [category.name, category]));
+      productCategories.forEach(name => {
+        if (!existing.has(name)) existing.set(name, { _id: name, name, image: '' });
+      });
+      return [...existing.values()];
+    });
+  }, [products]);
+
+  useEffect(() => {
     setLoading(true);
     Promise.all([
-      productAPI.getAll({ category: decodedName }).then(r => setProducts(r.data)).catch(() => setProducts([])),
+      productAPI.getAll({ category: decodedName, random: 'true' }).then(r => setProducts(r.data)).catch(() => setProducts([])),
       categoryAPI.getAll().then(r => setCategories(r.data)).catch(() => setCategories([]))
     ]).finally(() => setLoading(false));
   }, [decodedName]);
@@ -68,6 +80,7 @@ export default function CategoryPage() {
           <div className="products-grid" style={{ marginBottom: '60px' }}>
             {products.map(product => {
               const img = (product.images && product.images.length > 0 ? product.images[product.imagePrimaryIndex || 0] : product.image) || '';
+              const categories = product.categories?.length ? product.categories : [product.category].filter(Boolean);
               return (
                 <div className="product-card" key={product._id} onClick={() => setSelectedProduct(product)}>
                   <div className="product-card-image">
@@ -80,16 +93,14 @@ export default function CategoryPage() {
                     {!product.inStock && <span className="badge out-of-stock">Sold Out</span>}
                   </div>
                   <div className="product-card-body">
-                    <div className="product-card-category">{product.category}</div>
+                    <div className="product-card-category">{categories.join(' / ')}</div>
                     <h3 className="product-card-name">{product.name}</h3>
                     <p className="product-card-desc">{product.description}</p>
                     <div className="product-card-footer">
                       <span className="product-card-price"><span className="currency">$</span>{product.price.toFixed(2)}</span>
-                      {product.inStock && (
-                        <button className="btn-icon" onClick={e => { e.stopPropagation(); addItem(product); }} title="Add to cart">
-                          <HiShoppingCart size={16} />
-                        </button>
-                      )}
+                      <button className="btn-icon" onClick={e => { e.stopPropagation(); addItem(product); }} title="Add to cart">
+                        <HiShoppingCart size={16} />
+                      </button>
                     </div>
                   </div>
                 </div>

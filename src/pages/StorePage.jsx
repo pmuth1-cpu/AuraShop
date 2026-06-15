@@ -14,6 +14,7 @@ const PAGE_SIZE = 8;
 
 function ProductCard({ product, index, onSelect, onAdd }) {
   const img = (product.images && product.images.length > 0 ? product.images[product.imagePrimaryIndex || 0] : product.image) || '';
+  const categories = product.categories?.length ? product.categories : [product.category].filter(Boolean);
 
   return (
     <div className="product-card" onClick={() => onSelect(product)}>
@@ -32,16 +33,14 @@ function ProductCard({ product, index, onSelect, onAdd }) {
         {!product.inStock && <span className="badge out-of-stock">Pre-order</span>}
       </div>
       <div className="product-card-body">
-        <div className="product-card-category">{product.category}</div>
+        <div className="product-card-category">{categories.join(' / ')}</div>
         <h3 className="product-card-name">{product.name}</h3>
         <p className="product-card-desc">{product.description}</p>
         <div className="product-card-footer">
           <span className="product-card-price"><span className="currency">$</span>{product.price.toFixed(2)}</span>
-          {product.inStock && (
-            <button className="btn-icon" onClick={e => { e.stopPropagation(); onAdd(product); }} title="Add to cart">
-              <HiShoppingCart size={16} />
-            </button>
-          )}
+          <button className="btn-icon" onClick={e => { e.stopPropagation(); onAdd(product); }} title="Add to cart">
+            <HiShoppingCart size={16} />
+          </button>
         </div>
       </div>
     </div>
@@ -70,6 +69,7 @@ export default function StorePage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
+  const [randomize, setRandomize] = useState(false);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -90,6 +90,7 @@ export default function StorePage() {
       skip: (pageNum - 1) * PAGE_SIZE,
     };
     if (selectedCategory) params.category = selectedCategory;
+    if (randomize) params.random = 'true';
     if (search.trim()) params.search = search.trim();
     if (maxPrice.trim()) params.maxPrice = maxPrice;
 
@@ -105,13 +106,13 @@ export default function StorePage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [search, maxPrice, selectedCategory]);
+  }, [search, maxPrice, selectedCategory, randomize]);
 
   useEffect(() => {
     setProducts([]);
     setPage(1);
     fetchProducts(1, true);
-  }, [search, maxPrice, selectedCategory, fetchProducts]);
+  }, [search, maxPrice, selectedCategory, randomize, fetchProducts]);
 
   useEffect(() => {
     if (!loaderRef.current || !hasMore || loading || loadingMore) return;
@@ -130,7 +131,7 @@ export default function StorePage() {
   }, [hasMore, loading, loadingMore, page, fetchProducts]);
 
   useEffect(() => {
-    const productCategories = [...new Set(products.map(product => product.category).filter(Boolean))];
+    const productCategories = [...new Set(products.flatMap(product => product.categories?.length ? product.categories : [product.category]).filter(Boolean))];
     if (productCategories.length === 0) return;
 
     setCategories(prev => {
@@ -194,15 +195,20 @@ export default function StorePage() {
             </div>
           </div>
 
-          {categories.length > 0 && (
+          {categories.length > 0 ? (
             <div className="category-section" style={{ marginBottom: '32px' }}>
               <div className="category-section-header">
                 <h3>{selectedCategory ? selectedCategory : 'Shop by Category'}</h3>
-                {canViewMoreCategories && (
-                  <button className="view-more-btn" onClick={() => setShowAllCategories(v => !v)}>
-                    {showAllCategories ? 'Show Less' : 'View More'}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button className="view-more-btn" onClick={() => setRandomize(v => !v)} style={{ borderColor: randomize ? 'var(--accent)' : 'var(--border-glass)' }}>
+                    {randomize ? 'Random On' : 'Random'}
                   </button>
-                )}
+                  {canViewMoreCategories && (
+                    <button className="view-more-btn" onClick={() => setShowAllCategories(v => !v)}>
+                      {showAllCategories ? 'Show Less' : 'View More'}
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="filter-bar">
                 <button
@@ -222,7 +228,7 @@ export default function StorePage() {
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
 
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '32px' }}>
             <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Max Price:</span>

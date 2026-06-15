@@ -19,7 +19,8 @@ export default function AdminProductForm() {
     name: '', 
     description: '', 
     price: '', 
-    category: '', 
+    category: '',
+    categories: [],
     inStock: true, 
     featured: false, 
     availabilityStatus: 'instock',
@@ -41,7 +42,8 @@ export default function AdminProductForm() {
           name: p.name, 
           description: p.description, 
           price: p.price, 
-          category: p.category, 
+          category: p.category,
+          categories: p.categories?.length ? p.categories : (p.category ? [p.category] : []),
           inStock: p.inStock, 
           featured: p.featured, 
           availabilityStatus: p.availabilityStatus || (p.inStock ? 'instock' : 'preorder'),
@@ -58,6 +60,16 @@ export default function AdminProductForm() {
   useEffect(() => {
     categoryAPI.getAll().then(r => setCategories(r.data)).catch(() => {});
   }, []);
+
+  const addCategory = (categoryName) => {
+    const name = categoryName.trim();
+    if (!name) return;
+    setForm(f => ({ ...f, categories: [...new Set([...(f.categories || []), name])] }));
+  };
+
+  const removeCategory = (categoryName) => {
+    setForm(f => ({ ...f, categories: (f.categories || []).filter(category => category !== categoryName) }));
+  };
 
   useEffect(() => {
     return () => {
@@ -156,7 +168,8 @@ export default function AdminProductForm() {
       fd.append('description', form.description);
       fd.append('price', Number(form.price) || 0);
       fd.append('availabilityStatus', form.availabilityStatus);
-      fd.append('category', form.category);
+      fd.append('category', form.categories[0] || form.category);
+      fd.append('categories', JSON.stringify(form.categories));
       fd.append('inStock', form.availabilityStatus === 'instock');
       fd.append('featured', form.featured);
       fd.append('sizes', JSON.stringify(form.sizes));
@@ -232,18 +245,27 @@ export default function AdminProductForm() {
             <textarea id="description" name="description" value={form.description} onChange={handleChange} required placeholder="Product description" />
           </div>
           <div className="form-group">
-            <label htmlFor="category">Category</label>
+            <label htmlFor="category">Categories</label>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              {(form.categories?.length ? form.categories : [form.category]).filter(Boolean).map(category => (
+                <span key={category} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '999px', background: 'rgba(139,92,246,0.12)', color: 'var(--accent-light)', border: '1px solid var(--accent)', fontSize: '0.85rem' }}>
+                  {category}
+                  <button type="button" onClick={() => removeCategory(category)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0 }}><HiX size={14} /></button>
+                </span>
+              ))}
+            </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <select
                 id="category"
-                name="category"
-                value={form.category}
-                onChange={handleChange}
-                required
+                value=""
+                onChange={e => {
+                  addCategory(e.target.value);
+                  e.target.value = '';
+                }}
                 style={{ flex: 1, padding: '12px 16px', background: 'var(--bg-card)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.95rem', cursor: 'pointer' }}
               >
-                <option value="">Select category</option>
-                {categories.map(c => (
+                <option value="">Add existing category</option>
+                {categories.filter(c => !form.categories?.includes(c.name)).map(c => (
                   <option key={c._id} value={c.name}>{c.name}</option>
                 ))}
               </select>
@@ -273,8 +295,8 @@ export default function AdminProductForm() {
                       const fd = new FormData();
                       fd.append('name', newCategoryName.trim());
                       const r = await categoryAPI.create(fd);
-                      setCategories([...categories, r.data]);
-                      setForm(f => ({ ...f, category: r.data.name }));
+                      setCategories(prev => [...prev, r.data]);
+                      addCategory(r.data.name);
                       setNewCategoryName('');
                       setShowNewCat(false);
                       toast.success('Category added');

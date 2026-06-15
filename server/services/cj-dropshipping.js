@@ -106,6 +106,39 @@ function productStock(cjProduct) {
   return total || Number(cjProduct.warehouseInventoryNum ?? cjProduct.totalVerifiedInventory ?? cjProduct.stock ?? 0);
 }
 
+function decodeHtmlEntities(value) {
+  return value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
+function sanitizeCJDescription(value) {
+  if (!value) return '';
+  let text = String(value);
+  text = text.replace(/<br\s*\/?\s*>/gi, '\n');
+  text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|tr)>/gi, '\n');
+  text = text.replace(/<img\b[^>]*>/gi, '');
+  text = text.replace(/<[^>]+>/g, ' ');
+  text = decodeHtmlEntities(text);
+  return text
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\s+/g, ' ')
+    .replace(/\n /g, '\n')
+    .trim();
+}
+
+function extractDescriptionImages(value) {
+  if (!value) return [];
+  return [...new Set(
+    String(value)
+      .match(/https?:\/\/[^\s"'<>]+?\.(?:jpe?g|png|gif|webp)(?:\?[^\s"'<>]*)?/gi) || []
+  )].slice(0, 10);
+}
+
 function productImages(cjProduct) {
   if (Array.isArray(cjProduct.productImageSet)) return cjProduct.productImageSet.filter(Boolean);
   if (Array.isArray(cjProduct.picture)) return cjProduct.picture.filter(Boolean);
@@ -113,14 +146,20 @@ function productImages(cjProduct) {
   return [cjProduct.bigImage || cjProduct.productImage || cjProduct.image].filter(Boolean);
 }
 
-function productCategory(cjProduct) {
-  const names = [
+function productCategories(cjProduct) {
+  const raw = firstValue(
     cjProduct.threeCategoryName,
     cjProduct.twoCategoryName,
     cjProduct.oneCategoryName,
     cjProduct.categoryName,
-  ].filter(Boolean);
-  return names.length ? names.join(' / ') : 'Imported';
+    'Imported'
+  );
+  return [...new Set(
+    String(raw)
+      .split(/[\/>|,]+/)
+      .map(category => category.trim())
+      .filter(Boolean)
+  )];
 }
 
 function productPrice(cjProduct) {
@@ -142,6 +181,9 @@ function productWarehouse(cjProduct) {
 }
 
 export function mapCJProduct(cjProduct) {
+  const description = sanitizeCJDescription(cjProduct.description || '');
+  const categories = productCategories(cjProduct);
+  const images = [...new Set([...productImages(cjProduct), ...extractDescriptionImages(cjProduct.description || '')])].slice(0, 10);
   const variants = Array.isArray(cjProduct.variants)
     ? cjProduct.variants.map(variant => ({
         sku: variant.variantSku || variant.sku || '',
@@ -160,10 +202,11 @@ export function mapCJProduct(cjProduct) {
 
   return {
     name: firstValue(cjProduct.nameEn, cjProduct.productNameEn, cjProduct.productName, 'Imported Product'),
-    description: cjProduct.description || '',
-    category: productCategory(cjProduct),
+    description,
+    category: categories[0] || 'Imported',
+    categories,
     price: productPrice(cjProduct),
-    images: productImages(cjProduct),
+    images,
     variants,
     inStock: productStock(cjProduct) > 0 || variants.some(variant => variant.stock > 0),
     source: {

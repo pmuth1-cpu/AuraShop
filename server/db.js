@@ -20,7 +20,12 @@ export async function connectDB() {
 // PRODUCTS
 export async function getAllProducts(filters = {}) {
   let query = {};
-  if (filters.category && filters.category !== 'all') query.category = filters.category;
+  if (filters.category && filters.category !== 'all') {
+    query.$or = [
+      { category: filters.category },
+      { categories: filters.category },
+    ];
+  }
   if (filters.search) {
     const searchRegex = { $regex: filters.search, $options: 'i' };
     query.$or = [
@@ -41,8 +46,17 @@ export async function getAllProducts(filters = {}) {
   const limit = Number(filters.limit);
   let productQuery = Product.find(query).sort({ createdAt: -1, _id: -1 });
 
-  if (!Number.isNaN(skip) && skip > 0) productQuery = productQuery.skip(skip);
+  if (!Number.isNaN(skip) && skip > 0 && filters.random !== 'true') productQuery = productQuery.skip(skip);
   if (!Number.isNaN(limit) && limit > 0) productQuery = productQuery.limit(Math.min(limit, 50));
+
+  if (filters.random === 'true' && !Number.isNaN(limit) && limit > 0) {
+    const count = await Product.countDocuments(query);
+    if (count > 0) {
+      const maxSkip = Math.max(count - Math.min(limit, 50), 0);
+      const randomSkip = Math.floor(Math.random() * (maxSkip + 1));
+      productQuery = Product.find(query).skip(randomSkip).limit(Math.min(limit, 50));
+    }
+  }
 
   const items = await productQuery.lean();
   return items.map(normalizeProduct);
@@ -54,18 +68,59 @@ export async function getProductById(id) {
   return normalizeProduct(item);
 }
 
+function decodeHtmlEntities(value) {
+  return value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
+function sanitizeProductDescription(value) {
+  if (!value) return '';
+  let text = String(value);
+  text = text.replace(/<br\s*\/?\s*>/gi, '\n');
+  text = text.replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|tr)>/gi, '\n');
+  text = text.replace(/<img\b[^>]*>/gi, '');
+  text = text.replace(/<[^>]+>/g, ' ');
+  text = decodeHtmlEntities(text);
+  return text
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\s+/g, ' ')
+    .replace(/\n /g, '\n')
+    .trim();
+}
+
+function extractDescriptionImages(value) {
+  if (!value) return [];
+  return [...new Set(
+    String(value)
+      .match(/https?:\/\/[^\s"'<>]+?\.(?:jpe?g|png|gif|webp)(?:\?[^\s"'<>]*)?/gi) || []
+  )].slice(0, 10);
+}
+
 export function normalizeProduct(item) {
+  const descriptionImages = extractDescriptionImages(item.description);
+  const categories = Array.isArray(item.categories) && item.categories.length > 0
+    ? item.categories.map(category => String(category).trim()).filter(Boolean)
+    : (item.category ? [String(item.category).trim()] : []);
   const images = (item.images && item.images.length > 0)
     ? item.images
     : (item.image ? [item.image] : []);
-  const maxIdx = images.length > 0 ? images.length - 1 : 0;
+  const mergedImages = [...new Set([...images, ...descriptionImages])].slice(0, 10);
+  const maxIdx = mergedImages.length > 0 ? mergedImages.length - 1 : 0;
   const rawIdx = typeof item.imagePrimaryIndex === 'number' ? item.imagePrimaryIndex : 0;
   const primaryIdx = rawIdx < 0 || rawIdx > maxIdx ? 0 : rawIdx;
   return {
     ...item,
-    images,
+    category: categories[0] || item.category || '',
+    categories,
+    description: sanitizeProductDescription(item.description),
+    images: mergedImages,
     imagePrimaryIndex: primaryIdx,
-    image: item.image || images[0] || '',
+    image: item.image || mergedImages[0] || '',
   };
 }
 

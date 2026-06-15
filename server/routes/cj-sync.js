@@ -5,16 +5,26 @@ import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
+function shuffle(items) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 router.post('/browse', verifyToken, async (req, res) => {
   try {
-    const { keyword, page = 1, pageSize = 50 } = req.body;
+    const { keyword, page = 1, pageSize = 50, random } = req.body;
     const response = keyword
       ? await searchCJProducts(keyword, page, pageSize)
       : await getCJProducts(page, pageSize);
 
     const cjProducts = productListFromResponse(response);
+    const browseProducts = random === true || random === 'true' ? shuffle(cjProducts) : cjProducts;
 
-    const previews = cjProducts.slice(0, Number(pageSize) || 50).map(cjProduct => {
+    const previews = browseProducts.slice(0, Number(pageSize) || 50).map(cjProduct => {
       const mapped = mapCJProduct(cjProduct);
       const cjId = String(cjProduct.pid || cjProduct.productId || cjProduct.id || cjProduct.productSku || cjProduct.sku);
 

@@ -16,6 +16,13 @@ const upload = multer({
     cb(new Error('Only image files are allowed.'));
   },
 });
+
+function parseCategories(value) {
+  if (!value) return [];
+  const parsed = Array.isArray(value) ? value : String(value).split(',');
+  return [...new Set(parsed.map(category => String(category).trim()).filter(Boolean))];
+}
+
 const uploadMultiple = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024, files: 10 },
@@ -85,8 +92,11 @@ router.post('/', verifyToken, uploadMultiple.array('images', 10), async (req, re
       return res.status(400).json({ message: 'Valid price is required' });
     }
     const variants = req.body.variants ? JSON.parse(req.body.variants) : [];
+    const categories = parseCategories(req.body.categories || req.body.category);
     const product = await createProduct({
       ...req.body,
+      category: categories[0] || 'Uncategorized',
+      categories,
       price,
       stock: Number(req.body.stock) || 0,
       inStock: req.body.inStock === 'true' || req.body.inStock === true,
@@ -115,6 +125,11 @@ router.put('/:id', verifyToken, uploadMultiple.array('images', 10), async (req, 
     if (data.variants !== undefined) data.variants = JSON.parse(data.variants);
     if (data.sizes !== undefined) data.sizes = Array.isArray(data.sizes) ? data.sizes : JSON.parse(data.sizes || '[]');
     if (data.colors !== undefined) data.colors = Array.isArray(data.colors) ? data.colors : JSON.parse(data.colors || '[]');
+    const categories = parseCategories(data.categories || data.category);
+    if (categories.length > 0) {
+      data.category = categories[0];
+      data.categories = categories;
+    }
     data.merchant = data.merchant || null;
     if (data.source && typeof data.source === 'string') {
       try { data.source = JSON.parse(data.source); } catch { data.source = undefined; }
