@@ -6,7 +6,7 @@ import { authAPI } from '../api';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('aurashop369');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();

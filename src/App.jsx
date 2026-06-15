@@ -7,6 +7,7 @@ import AdminProducts from './pages/AdminProducts';
 import AdminProductForm from './pages/AdminProductForm';
 import AdminCategories from './pages/AdminCategories';
 import AdminCategoryForm from './pages/AdminCategoryForm';
+import AdminCJSync from './pages/AdminCJSync';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
       <Route path="/manage-aura-369/categories" element={<ProtectedRoute><AdminCategories /></ProtectedRoute>} />
       <Route path="/manage-aura-369/categories/new" element={<ProtectedRoute><AdminCategoryForm /></ProtectedRoute>} />
       <Route path="/manage-aura-369/categories/edit/:id" element={<ProtectedRoute><AdminCategoryForm /></ProtectedRoute>} />
+      <Route path="/manage-aura-369/cj-sync" element={<ProtectedRoute><AdminCJSync /></ProtectedRoute>} />
     </Routes>
   );
 }

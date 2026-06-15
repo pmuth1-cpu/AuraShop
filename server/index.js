@@ -7,6 +7,7 @@ import { connectDB } from './db.js';
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import categoryRoutes from './routes/categories.js';
+import cjSyncRoutes from './routes/cj-sync.js';
 
 dotenv.config();
 
@@ -20,7 +21,8 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
   origin: [
     'https://aura-shop-six.vercel.app',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://localhost:5173'
   ]
 }));
 app.use(express.json());
@@ -29,6 +31,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/cj-sync', cjSyncRoutes);
 
 // Multer error handler
 app.use((err, req, res, next) => {
@@ -43,15 +46,16 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve frontend
+// Serve frontend dist + public folder
+app.use('/static', express.static(path.join(__dirname, '..', 'public')));
 app.use(express.static(path.join(__dirname, '..', 'dist')));
 
-// Root route - serve index.html
+// Root route
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
 });
 
-// Catch-all for SPA routing - must come after API routes
+// SPA catch-all — Express 5 compatible (no bare `*` pattern)
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
 });

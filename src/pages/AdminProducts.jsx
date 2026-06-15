@@ -27,8 +27,7 @@ export default function AdminProducts() {
   useEffect(() => { fetchData(); }, []);
 
   const handleDelete = async (id, name) => {
-    if (!confirm(`Delete "${name}"?`)) return;
-    if (!confirm(`Delete "${name}"?`)) return;
+    if (!confirm(`Delete "${name}"?\n\nThis action cannot be undone.`)) return;
     try {
       await productAPI.delete(id);
       toast.success('Product deleted');

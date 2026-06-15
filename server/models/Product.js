@@ -56,6 +56,28 @@ const productSchema = new mongoose.Schema({
     type: [variantSchema],
     default: [],
   },
+  sizes: {
+    type: [String],
+    default: [],
+  },
+  colors: {
+    type: [String],
+    default: [],
+  },
+  merchant: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Merchant',
+    index: true,
+    default: null,
+  },
+  source: {
+    platform: { type: String, enum: ['manual', 'aliexpress', 'cjdropshipping', '1688', 'taobao', 'spocket'], default: 'manual' },
+    sourceId: { type: String, index: true, default: '' },
+    sourceUrl: { type: String, default: '' },
+    supplierInfo: { type: mongoose.Schema.Types.Mixed, default: {} },
+    lastSynced: { type: Date },
+    markupPercent: { type: Number, default: 60 },
+  },
 }, {
   timestamps: true,
 });

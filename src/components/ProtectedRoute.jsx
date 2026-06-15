@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 export default function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, login } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
-  const [username, setUsername] = useState('aurashop369');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 

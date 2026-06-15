@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { HiSearch, HiShoppingCart } from 'react-icons/hi';
 import { SiTelegram } from 'react-icons/si';
 import { productAPI, categoryAPI } from '../api';
@@ -9,18 +9,7 @@ import CategoryModal from '../components/CategoryModal';
 import ProductModal from '../components/ProductModal';
 import Footer from '../components/Footer';
 
-const PAGE_SIZE = 12;
-
-const categorySlug = (category) => encodeURIComponent(category.replace(/\s+/g, '-'));
-
-const shuffleArray = (items) => {
-  const shuffled = [...items];
-  for (let i = shuffled.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
+const PAGE_SIZE = 8;
 
 function ProductCard({ product, index, onSelect, onAdd }) {
   const img = (product.images && product.images.length > 0 ? product.images[product.imagePrimaryIndex || 0] : product.image) || '';
@@ -32,7 +21,7 @@ function ProductCard({ product, index, onSelect, onAdd }) {
           <img
             src={img}
             alt={product.name}
-            loading={index < 4 ? 'eager' : 'lazy'}
+            loading="lazy"
             decoding="async"
           />
         ) : (
@@ -75,87 +64,73 @@ function ProductSkeleton() {
 export default function StorePage() {
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState('');
-  const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [activeCategory, setActiveCategory] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [categoryState, setCategoryState] = useState({});
-  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
   const { addItem } = useCart();
+  const loaderRef = useRef(null);
 
-  const fetchCategoryPage = (categoryName, targetPage, reset = false) => {
+  // Initial load: fetch first PAGE_SIZE products
+  const fetchProducts = useCallback(async (pageNum, reset = false) => {
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
+
     const params = {
-      category: categoryName,
       limit: PAGE_SIZE,
-      skip: (targetPage - 1) * PAGE_SIZE,
+      skip: (pageNum - 1) * PAGE_SIZE,
     };
-
     if (search.trim()) params.search = search.trim();
-    if (minPrice.trim()) params.minPrice = minPrice;
     if (maxPrice.trim()) params.maxPrice = maxPrice;
 
-    if (reset) setLoadingCategories(true);
-    else {
-      setCategoryState(prev => ({
-        ...prev,
-        [categoryName]: { ...(prev[categoryName] || {}), loadingMore: true }
-      }));
+    try {
+      const res = await productAPI.getAll(params);
+      const data = res.data || [];
+      setProducts(prev => reset ? data : [...prev, ...data]);
+      setHasMore(data.length === PAGE_SIZE);
+      setPage(pageNum);
+    } catch {
+      if (reset) setProducts([]);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
+  }, [search, maxPrice]);
 
-    productAPI.getAll(params)
-      .then(r => {
-        const data = shuffleArray(r.data || []);
-        setCategoryState(prev => {
-          const current = prev[categoryName] || {};
-          return {
-            ...prev,
-            [categoryName]: {
-              products: reset ? data : shuffleArray([...(current.products || []), ...data]),
-              page: targetPage,
-              hasMore: data.length === PAGE_SIZE,
-              loading: false,
-              loadingMore: false,
-            }
-          };
-        });
-      })
-      .catch(() => {
-        setCategoryState(prev => ({
-          ...prev,
-          [categoryName]: { ...(prev[categoryName] || {}), products: reset ? [] : (prev[categoryName]?.products || []), loading: false, loadingMore: false }
-        }));
-      })
-      .finally(() => {
-        if (reset) setLoadingCategories(false);
-      });
-  };
+  useEffect(() => {
+    setProducts([]);
+    setPage(1);
+    fetchProducts(1, true);
+  }, [search, maxPrice]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!loaderRef.current || !hasMore || loading || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          fetchProducts(page + 1);
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, page, fetchProducts]);
 
   useEffect(() => {
     categoryAPI.getAll().then(r => setCategories(r.data)).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    setLoadingCategories(true);
-    setCategoryState({});
-    categories.forEach(cat => fetchCategoryPage(cat.name, 1, true));
-  }, [search, minPrice, maxPrice, categories]);
-
-  useEffect(() => {
-    if (!activeCategory) return;
-    const timer = setTimeout(() => {
-      document.getElementById(`category-${categorySlug(activeCategory)}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [activeCategory]);
-
   const handleCategorySelect = (category) => {
-    setActiveCategory(category === 'all' ? '' : category);
     setIsCategoryModalOpen(false);
   };
-
-  const totalVisibleProducts = Object.values(categoryState).reduce((sum, state) => sum + (state.products?.length || 0), 0);
-  const hasAnyCategoryProducts = categories.some(cat => (categoryState[cat.name]?.products || []).length > 0);
 
   return (
     <>
@@ -179,7 +154,6 @@ export default function StorePage() {
         <div className="container">
           <div className="section-header" style={{ marginBottom: '24px' }}>
             <h2 className="section-title">Our <span>Collection</span></h2>
-
             <div className="search-box">
               <HiSearch className="search-icon" />
               <input type="text" placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} id="search-input" />
@@ -191,60 +165,57 @@ export default function StorePage() {
             <input type="range" min="0" max="500" step="1" value={maxPrice || 500} onChange={e => setMaxPrice(e.target.value === '500' ? '' : e.target.value)} style={{ width: '140px', accentColor: 'var(--accent)' }} />
             <span style={{ fontWeight: 600, color: 'var(--accent)', minWidth: '60px' }}>${maxPrice ? Number(maxPrice).toFixed(0) : 'Any'}</span>
             {maxPrice && <button onClick={() => setMaxPrice('')} style={{ background: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'underline', cursor: 'pointer' }}>Clear</button>}
-            {activeCategory && (
-              <button className="filter-chip active" onClick={() => setActiveCategory('')}>
-                Showing: {activeCategory}
-              </button>
-            )}
           </div>
 
-          {categories.map(cat => {
-            const state = categoryState[cat.name] || { products: [], hasMore: false, loading: loadingCategories };
-            const products = state.products || [];
-            if (!loadingCategories && products.length === 0) return null;
-
-            return (
-              <div id={`category-${categorySlug(cat.name)}`} key={cat.name} className={`category-section ${activeCategory === cat.name ? 'active' : ''}`} style={{ marginBottom: '48px' }}>
-                <div className="category-section-header">
-                  <h3>{cat.name}</h3>
-                  {products.length > 0 && (
-                    <button
-                      className="view-more-btn"
-                      disabled={state.loadingMore || !state.hasMore}
-                      onClick={() => fetchCategoryPage(cat.name, (state.page || 1) + 1, false)}
-                    >
-                      {state.loadingMore ? 'Loading...' : state.hasMore ? 'View More' : 'No More'}
-                    </button>
-                  )}
-                </div>
-                <div className="products-grid">
-                  {products.map((product, index) => (
-                    <ProductCard
-                      key={product._id}
-                      product={product}
-                      index={index}
-                      onSelect={setSelectedProduct}
-                      onAdd={addItem}
-                    />
-                  ))}
-                  {state.loadingMore && Array.from({ length: 4 }).map((_, index) => (
-                    <ProductSkeleton key={`loading-${index}`} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-
-          {!loadingCategories && !hasAnyCategoryProducts && (
+          {loading ? (
+            <div className="products-grid">
+              {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                <ProductSkeleton key={i} />
+              ))}
+            </div>
+          ) : products.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '1.2rem' }}>No products found</p>
             </div>
+          ) : (
+            <div className="products-grid">
+              {products.map((product, index) => (
+                <ProductCard
+                  key={product._id}
+                  product={product}
+                  index={index}
+                  onSelect={setSelectedProduct}
+                  onAdd={addItem}
+                />
+              ))}
+              {loadingMore && Array.from({ length: 4 }).map((_, i) => (
+                <ProductSkeleton key={`loading-${i}`} />
+              ))}
+            </div>
           )}
 
-          {loadingCategories && totalVisibleProducts === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-              <p style={{ fontSize: '1.2rem' }}>Loading products...</p>
+          {/* Infinite scroll trigger + Load More button */}
+          {!loading && hasMore && (
+            <div style={{ textAlign: 'center', marginTop: '40px' }}>
+              <button
+                ref={loaderRef}
+                className="btn btn-secondary"
+                onClick={() => fetchProducts(page + 1)}
+                disabled={loadingMore}
+                style={{ minWidth: '200px' }}
+              >
+                {loadingMore ? 'Loading...' : 'Load More Products'}
+              </button>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '12px' }}>
+                Showing {products.length} products
+              </p>
             </div>
+          )}
+
+          {!hasMore && products.length > 0 && (
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '32px', fontSize: '0.9rem' }}>
+              — All products loaded —
+            </p>
           )}
         </div>
       </section>

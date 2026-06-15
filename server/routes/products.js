@@ -94,6 +94,8 @@ router.post('/', verifyToken, uploadMultiple.array('images', 10), async (req, re
       image: imageUrl,
       images: images,
       variants: variants,
+      sizes: req.body.sizes ? JSON.parse(req.body.sizes) : [],
+      colors: req.body.colors ? JSON.parse(req.body.colors) : [],
       imagePrimaryIndex: 0,
     });
     res.status(201).json(product);
@@ -111,6 +113,12 @@ router.put('/:id', verifyToken, uploadMultiple.array('images', 10), async (req, 
     if (data.inStock !== undefined) data.inStock = data.inStock === 'true' || data.inStock === true;
     if (data.featured !== undefined) data.featured = data.featured === 'true' || data.featured === true;
     if (data.variants !== undefined) data.variants = JSON.parse(data.variants);
+    if (data.sizes !== undefined) data.sizes = Array.isArray(data.sizes) ? data.sizes : JSON.parse(data.sizes || '[]');
+    if (data.colors !== undefined) data.colors = Array.isArray(data.colors) ? data.colors : JSON.parse(data.colors || '[]');
+    data.merchant = data.merchant || null;
+    if (data.source && typeof data.source === 'string') {
+      try { data.source = JSON.parse(data.source); } catch { data.source = undefined; }
+    }
     
     let images = data.images ? (Array.isArray(data.images) ? data.images : JSON.parse(data.images)) : [];
     

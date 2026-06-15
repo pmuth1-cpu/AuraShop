@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { HiHome, HiCollection, HiPlus, HiLogout, HiArrowLeft, HiViewGrid } from 'react-icons/hi';
+import { HiHome, HiCollection, HiPlus, HiLogout, HiArrowLeft, HiViewGrid, HiRefresh } from 'react-icons/hi';
 import { useAuth } from '../context/AuthContext';
 
 export default function AdminSidebar() {
@@ -15,6 +15,7 @@ export default function AdminSidebar() {
         <Link to="/manage-aura-369/products" className={isActive('/manage-aura-369/products')}><HiCollection /> Products</Link>
         <Link to="/manage-aura-369/categories" className={isActive('/manage-aura-369/categories')}><HiViewGrid /> Categories</Link>
         <Link to="/manage-aura-369/products/new" className={isActive('/manage-aura-369/products/new')}><HiPlus /> Add Product</Link>
+        <Link to="/manage-aura-369/cj-sync" className={isActive('/manage-aura-369/cj-sync')}><HiRefresh /> CJ Sync</Link>
       </nav>
       <div className="admin-sidebar-footer">
         <Link to="/" className="admin-nav-item" style={{ width: '100%' }}><HiArrowLeft /> Return to Store</Link>

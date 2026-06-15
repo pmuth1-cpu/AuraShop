@@ -94,28 +94,22 @@ export function CartProvider({ children }) {
 
   const generateReceipt = () => {
     let receipt = '';
-    receipt += '╔════════════════╗\n';
-    receipt += '                AURA  SHOP\n';
-    receipt += '             Order  Confirm\n';
-    receipt += '╚════════════════╝\n';
-    receipt += `Phone number: ${customerInfo?.phone || '(phone number)'}\n`;
+    receipt += '///AURA SHOP ORDER\n';
+    receipt += `Phone: ${customerInfo?.phone || '(phone number)'}\n`;
     const locationParts = [customerInfo?.province, customerInfo?.district, customerInfo?.commune, customerInfo?.village].filter(Boolean).map(v => String(v).replace(/undefined|null/g, '').trim()).filter(Boolean);
-    receipt += `Location: ${locationParts.length > 0 ? locationParts.join(', ') : '(province), (district), (commune), (village)'}\n`;
-    receipt += '\n🛒Cart summary\n';
+    receipt += `Loc: ${locationParts.length > 0 ? locationParts.join(', ') : '(no location)'}\n`;
+    receipt += '\n===ITEMS===\n';
     items.forEach((item, idx) => {
       const name = String(item.name || '').replace(/undefined|null/g, '').trim();
       const qty = Number(item.quantity || 0);
       const price = Number(item.price || 0);
-      const lineTotal = qty * price;
       const variantText = item.variantInfo ? ` [${item.variantInfo}]` : '';
       receipt += `${idx + 1}.${name}${variantText}\n`;
-      receipt += `   Qty: ${qty} x $${price.toFixed(2)} = $${lineTotal.toFixed(2)}\n`;
+      receipt += `   ${qty} x $${price.toFixed(2)} = $${(qty * price).toFixed(2)}\n`;
     });
-    receipt += '----------------------------------------\n';
-    const totalText = transportCostVal > 0 ? `💲total: $${grandTotal.toFixed(2)} + $${transportCostVal.toFixed(2)}` : `💲total: $${grandTotal.toFixed(2)}`;
-    receipt += `${totalText}\n`;
-    receipt += '----------------------------------------\n';
-    receipt += '📤Please confirm my order! Thank you!';
+    receipt += '\n===TOTAL===\n';
+    receipt += `Total: $${grandTotal.toFixed(2)}\n`;
+    receipt += '\nPlease confirm order!';
     return receipt;
   };
 
@@ -125,33 +119,28 @@ export function CartProvider({ children }) {
     const transport = transportCostOverride !== null ? transportCostOverride : transportCostVal;
     const message = generateReceiptWithInfo(info, transport);
     const encoded = encodeURIComponent(message);
-    window.open(`https://t.me/${username}?text=${encoded}`, '_blank');
+    window.location.href = `https://t.me/${username}?text=${encoded}`;
   };
 
   const generateReceiptWithInfo = (info, transport) => {
     let receipt = '';
-    receipt += '╔════════════════╗\n';
-    receipt += '                AURA  SHOP\n';
-    receipt += '             Order  Confirm\n';
-    receipt += '╚════════════════╝\n';
-    receipt += `Phone number: ${info?.phone || '(phone number)'}\n`;
+    receipt += '///AURA SHOP ORDER\n';
+    receipt += `Phone: ${info?.phone || '(phone number)'}\n`;
     const locationParts = [info?.province, info?.district, info?.commune, info?.village].filter(Boolean).map(v => String(v).replace(/undefined|null/g, '').trim()).filter(Boolean);
-    receipt += `Location: ${locationParts.length > 0 ? locationParts.join(', ') : '(province), (district), (commune), (village)'}\n`;
-    receipt += '\n🛒Cart summary\n';
+    receipt += `Loc: ${locationParts.length > 0 ? locationParts.join(', ') : '(no location)'}\n`;
+    receipt += '\n===ITEMS===\n';
     items.forEach((item, idx) => {
       const name = String(item.name || '').replace(/undefined|null/g, '').trim();
       const qty = Number(item.quantity || 0);
       const price = Number(item.price || 0);
-      const lineTotal = qty * price;
       const variantText = item.variantInfo ? ` [${item.variantInfo}]` : '';
       receipt += `${idx + 1}.${name}${variantText}\n`;
-      receipt += `   Qty: ${qty} x $${price.toFixed(2)} = $${lineTotal.toFixed(2)}\n`;
+      receipt += `   ${qty} x $${price.toFixed(2)} = $${(qty * price).toFixed(2)}\n`;
     });
-    receipt += '----------------------------------------\n';
-    const totalText = transport > 0 ? `💲total: $${(subtotal + transport).toFixed(2)} + $${transport.toFixed(2)}` : `💲total: $${subtotal.toFixed(2)}`;
-    receipt += `${totalText}\n`;
-    receipt += '----------------------------------------\n';
-    receipt += '📤Please confirm my order! Thank you!';
+    receipt += '\n===TOTAL===\n';
+    const grand = subtotal + transport;
+    receipt += `Total: $${grand.toFixed(2)}\n`;
+    receipt += '\nPlease confirm order!';
     return receipt;
   };
 

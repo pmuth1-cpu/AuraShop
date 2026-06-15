@@ -23,16 +23,7 @@ html.dark{
   --shadow-lg:0 8px 40px rgba(0,0,0,0.52);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary:#0a0a11;--bg-secondary:#111119;--bg-card:#161625;--bg-card-hover:#1e1e30;
-    --bg-glass:rgba(22,22,37,0.75);
-    --text-primary:#f0f0f8;--text-secondary:#b4b4c4;--text-muted:#7a7a8e;
-    --accent-glow:rgba(139,92,246,0.22);
-    --shadow-sm:0 2px 8px rgba(0,0,0,0.32);--shadow-md:0 4px 20px rgba(0,0,0,0.4);
-    --shadow-lg:0 8px 40px rgba(0,0,0,0.52);
-  }
-}
+
 
 html{scroll-behavior:smooth}
 body{font-family:var(--font-main);background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-height:100vh;overflow-x:hidden}

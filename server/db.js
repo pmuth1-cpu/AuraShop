@@ -29,6 +29,10 @@ export async function getAllProducts(filters = {}) {
     ];
   }
   if (filters.featured === 'true') query.featured = true;
+  if (filters.merchantId) query.merchant = filters.merchantId;
+  if (filters.sourceId && filters.platform) {
+    query.source = { sourceId: filters.sourceId, platform: filters.platform };
+  }
   if (filters.minPrice !== undefined) query.price = { $gte: Number(filters.minPrice) };
   if (filters.maxPrice !== undefined) query.price = { ...query.price, $lte: Number(filters.maxPrice) };
   if (filters.excludeId) query._id = { $ne: filters.excludeId };
@@ -109,4 +113,20 @@ export async function createAdmin(data) {
 
 export async function adminExists() {
   return Admin.countDocuments().then(c => c > 0);
+}
+
+// MERCHANTS
+export async function getMerchantByUsername(username) {
+  const Merchant = (await import('./models/Merchant.js')).default;
+  return Merchant.findOne({ username }).lean();
+}
+
+export async function createMerchant(data) {
+  const Merchant = (await import('./models/Merchant.js')).default;
+  return Merchant.create(data);
+}
+
+export async function getMerchantById(id) {
+  const Merchant = (await import('./models/Merchant.js')).default;
+  return Merchant.findById(id).lean();
 }
