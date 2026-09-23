@@ -7,7 +7,14 @@ import { connectDB } from './db.js';
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import categoryRoutes from './routes/categories.js';
-import cjSyncRoutes from './routes/cj-sync.js';
+import shopRoutes from './routes/shops.js';
+import sellerRoutes from './routes/seller.js';
+import paymentRoutes from './routes/payments.js';
+import adminPlatformRoutes from './routes/admin-platform.js';
+import buyerRoutes from './routes/buyer.js';
+import notificationRoutes from './routes/notifications.js';
+import orderRoutes from './routes/orders.js';
+import { startSubscriptionChecker } from './services/subscription-checker.js';
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -19,12 +26,22 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+const allowedOrigins = [
+  'https://aura-shop-six.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  process.env.CLIENT_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'https://aura-shop-six.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:5173'
-  ]
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true
 }));
 app.use(express.json());
 
@@ -32,7 +49,13 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/cj-sync', cjSyncRoutes);
+app.use('/api/shops', shopRoutes);
+app.use('/api/seller', sellerRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminPlatformRoutes);
+app.use('/api/buyer', buyerRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Multer error handler
 app.use((err, req, res, next) => {
@@ -65,6 +88,8 @@ async function start() {
   try {
     await connectDB();
     console.log('✅ Database connected');
+    // Start subscription checker after DB connection
+    startSubscriptionChecker();
   } catch (err) {
     console.error('⚠️ Database connection failed (continuing anyway):', err.message);
   }

@@ -10,7 +10,7 @@ import ProductModal from '../components/ProductModal';
 import Footer from '../components/Footer';
 
 export default function CategoryPage() {
-  const { categoryName } = useParams();
+  const { name: categoryName } = useParams();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);

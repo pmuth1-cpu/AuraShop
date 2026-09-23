@@ -1,24 +1,18 @@
-services:
+﻿services:
   - type: web
-    name: aura-shop
-    env: node
-    buildCommand: npm run build
+    name: aura-shop-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
     startCommand: node server/index.js
-    clearBuildCache: true
     envVars:
       - key: NODE_ENV
         value: production
-      - key: JWT_SECRET
-        value: aura-shop-secret-key-2026-change-in-production
-        helpText: Keep this stable; changing it invalidates all existing tokens.
-      - key: ADMIN_RESET_SECRET
-        value: reset-secret-369
+      - key: PORT
+        value: 5000
       - key: MONGODB_URI
-        value: mongodb+srv://USER:PASS@cluster.mongodb.net/aurashop?retryWrites=true&w=majority
-        helpText: Replace with your MongoDB Atlas connection string.
-      - key: CLOUDINARY_CLOUD_NAME
-        fromSecret: CLOUDINARY_CLOUD_NAME
-      - key: CLOUDINARY_API_KEY
-        fromSecret: CLOUDINARY_API_KEY
-      - key: CLOUDINARY_API_SECRET
-        fromSecret: CLOUDINARY_API_SECRET
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        sync: false

@@ -10,6 +10,7 @@ const categorySchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  shop: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop', default: null, index: true },
 }, {
   timestamps: true,
 });

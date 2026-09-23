@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { Product, Category, Admin } from './models/index.js';
+import { Product, Category, User, Shop, Payment } from './models/index.js';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -158,31 +158,15 @@ export async function deleteCategory(id) {
   return Category.findByIdAndDelete(id).lean();
 }
 
-// ADMINS
-export async function getAdminByUsername(username) {
-  return Admin.findOne({ username }).lean();
+// USERS
+export async function getUserByEmail(email) {
+  return User.findOne({ email: email.toLowerCase() }).lean();
 }
 
-export async function createAdmin(data) {
-  return Admin.create(data);
+export async function getUserById(id) {
+  return User.findById(id).lean();
 }
 
-export async function adminExists() {
-  return Admin.countDocuments().then(c => c > 0);
-}
-
-// MERCHANTS
-export async function getMerchantByUsername(username) {
-  const Merchant = (await import('./models/Merchant.js')).default;
-  return Merchant.findOne({ username }).lean();
-}
-
-export async function createMerchant(data) {
-  const Merchant = (await import('./models/Merchant.js')).default;
-  return Merchant.create(data);
-}
-
-export async function getMerchantById(id) {
-  const Merchant = (await import('./models/Merchant.js')).default;
-  return Merchant.findById(id).lean();
+export async function createUser(data) {
+  return User.create(data);
 }

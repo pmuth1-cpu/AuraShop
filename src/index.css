@@ -375,8 +375,22 @@ input[type="range"]::-moz-range-thumb{ width: 18px; height: 18px; border-radius:
   .product-card-desc{font-size:0.75rem;-webkit-line-clamp:2}
   .product-card-price{font-size:0.9rem}
   .btn-icon{width:28px;height:28px}
-  .admin-sidebar{display:none}
-  .admin-main{margin-left:0}
+    /* Mobile Admin & Seller Layout */
+  .mobile-admin-bar{display:flex;align-items:center;justify-content:space-between;position:fixed;top:0;left:0;right:0;height:56px;padding:0 16px;background:var(--bg-glass);backdrop-filter:blur(18px);border-bottom:1px solid var(--border-glass);z-index:400}
+  .mobile-admin-bar .menu-btn{background:none;color:var(--text-primary);font-size:1.4rem;display:flex;align-items:center;cursor:pointer}
+  .mobile-admin-bar .logo{font-family:var(--font-display);font-weight:800;font-size:1.15rem;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .admin-sidebar{display:flex!important;position:fixed!important;top:0;left:0;bottom:0;width:280px;z-index:500;transform:translateX(-100%);transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:none}
+  .admin-sidebar.open{transform:translateX(0);box-shadow:10px 0 40px rgba(0,0,0,0.6)}
+  .admin-sidebar-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:490}
+  .admin-main{margin-left:0!important;padding:16px!important;padding-top:72px!important;width:100%;overflow-x:hidden}
+  .admin-header{flex-direction:column;align-items:flex-start;gap:12px;margin-bottom:20px}
+  .admin-header h1{font-size:1.4rem}
+  .stats-grid{grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;margin-bottom:20px}
+  .stat-card{padding:16px}
+  .stat-card .stat-value{font-size:1.4rem}
+  .admin-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .admin-table{min-width:550px;font-size:0.82rem}
+  .admin-table th, .admin-table td{padding:10px 12px}
   .form-row{grid-template-columns:1fr}
   .admin-table{font-size:0.85rem}
   .admin-table th,.admin-table td{padding:10px 12px}

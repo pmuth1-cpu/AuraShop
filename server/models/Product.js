@@ -7,6 +7,8 @@ const variantSchema = new mongoose.Schema({
 }, { _id: false });
 
 const productSchema = new mongoose.Schema({
+  shop: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop', index: true, default: null },
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true, default: null },
   name: {
     type: String,
     required: [true, 'Product name is required'],
@@ -68,14 +70,8 @@ const productSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
-  merchant: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Merchant',
-    index: true,
-    default: null,
-  },
   source: {
-    platform: { type: String, enum: ['manual', 'aliexpress', 'cjdropshipping', '1688', 'taobao', 'spocket'], default: 'manual' },
+    platform: { type: String, enum: ['manual', 'aliexpress', '1688', 'taobao', 'spocket'], default: 'manual' },
     sourceId: { type: String, index: true, default: '' },
     sourceUrl: { type: String, default: '' },
     supplierInfo: { type: mongoose.Schema.Types.Mixed, default: {} },

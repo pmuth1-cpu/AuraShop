@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
+import { SellerAuthProvider } from './context/SellerAuthContext';
 import CubeLoader from './components/CubeLoader';
 import IntroScreen from './components/IntroScreen';
 import './index.css';
@@ -34,21 +35,23 @@ function Root() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <CartProvider>
-          <App />
-          <Toaster
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: '#1a1a2e',
-                color: '#e0e0e0',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
-                borderRadius: '12px',
-                fontFamily: 'Inter, sans-serif',
-              },
-            }}
-          />
-        </CartProvider>
+        <SellerAuthProvider>
+          <CartProvider>
+            <App />
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                style: {
+                  background: '#1a1a2e',
+                  color: '#e0e0e0',
+                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  borderRadius: '12px',
+                  fontFamily: 'Inter, sans-serif',
+                },
+              }}
+            />
+          </CartProvider>
+        </SellerAuthProvider>
       </AuthProvider>
     </BrowserRouter>
   );
