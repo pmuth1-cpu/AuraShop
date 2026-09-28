@@ -27,6 +27,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 const allowedOrigins = [
+  'https://aurashopforcam.vercel.app',
   'https://aura-shop-six.vercel.app',
   'http://localhost:3000',
   'http://localhost:5173',
@@ -41,7 +42,9 @@ app.use(cors({
     }
     return callback(null, true);
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-reset-secret']
 }));
 app.use(express.json());
 
