@@ -109,7 +109,7 @@ export default function SellerDashboard() {
                 Your Shop URL
               </span>
               <div style={{ fontSize: '1.05rem', fontWeight: 700, marginTop: '2px' }}>
-                <span style={{ color: 'var(--text-muted)' }}>aurashop.com/shop/</span>
+                <span style={{ color: 'var(--text-muted)' }}>{typeof window !== 'undefined' ? window.location.host : 'aura-shop-six.vercel.app'}/shop/</span>
                 <span style={{ color: 'var(--accent-light)' }}>{shop.slug}</span>
               </div>
             </div>
