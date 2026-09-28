@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = (import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('onrender.com'))
+  ? import.meta.env.VITE_API_URL
+  : '/api';
 const RESET_SECRET = import.meta.env.VITE_RESET_SECRET;
 
 const API = axios.create({ baseURL: API_BASE });
