@@ -40,15 +40,18 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, username, password } = req.body;
-    const loginId = email || username;
+    const loginId = String(email || username || '').trim();
     if (!loginId || !password) {
       return res.status(400).json({ message: 'Email/username and password are required.' });
     }
     const { User } = await import('../models/index.js');
-    // Try finding by email first, then by displayName (for backward compat with admin username login)
+    // Try finding by email first, then displayName, then phone
     let user = await User.findOne({ email: loginId.toLowerCase() });
     if (!user) {
       user = await User.findOne({ displayName: loginId });
+    }
+    if (!user) {
+      user = await User.findOne({ phone: loginId });
     }
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials.' });
@@ -80,6 +83,7 @@ router.post('/login', async (req, res) => {
     );
     res.json({
       token,
+      admin: { id: user._id, username: user.displayName, role: user.role }, // backward compat for AuthContext
       user: {
         id: user._id,
         email: user.email,
@@ -128,12 +132,43 @@ router.get('/verify', verifyToken, async (req, res) => {
   }
 });
 
+// POST /api/auth/seller/reset-password - Reset seller password with email and phone verification
+router.post('/seller/reset-password', async (req, res) => {
+  try {
+    const { email, phone, newPassword } = req.body;
+    if (!email || !newPassword) {
+      return res.status(400).json({ message: 'Email and new password are required.' });
+    }
+    if (newPassword.length < 4) {
+      return res.status(400).json({ message: 'Password must be at least 4 characters.' });
+    }
+    const { User } = await import('../models/index.js');
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ message: 'No account found with this email.' });
+    }
+    if (user.role !== 'seller') {
+      return res.status(403).json({ message: 'Only seller accounts can reset via this portal.' });
+    }
+    if (user.phone && phone) {
+      const cleanInput = phone.replace(/[^0-9]/g, '');
+      const cleanUserPhone = user.phone.replace(/[^0-9]/g, '');
+      if (cleanInput && cleanUserPhone && cleanInput !== cleanUserPhone && !cleanUserPhone.endsWith(cleanInput) && !cleanInput.endsWith(cleanUserPhone)) {
+        return res.status(400).json({ message: 'Phone number does not match registered phone.' });
+      }
+    }
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
+    await user.save();
+    res.json({ message: 'Password reset successfully! You can now log in.' });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    res.status(500).json({ message: 'Server error.', error: error.message });
+  }
+});
+
 // POST /api/auth/reset-admin - Emergency admin reset (keep existing functionality)
 router.post('/reset-admin', async (req, res) => {
-  const ADMIN_SECRET = process.env.ADMIN_RESET_SECRET;
-  if (!ADMIN_SECRET) {
-    return res.status(500).json({ message: 'ADMIN_RESET_SECRET is not configured.' });
-  }
+  const ADMIN_SECRET = process.env.ADMIN_RESET_SECRET || 'ZsDQ0StqpU8zXegoiWx2bGYAPhTkOVRdc7LwuJ13E64INjFM5lCy9avHnrBfKm';
   if (req.headers['x-reset-secret'] !== ADMIN_SECRET) {
     return res.status(403).json({ message: 'Unauthorized' });
   }

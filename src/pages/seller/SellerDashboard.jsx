@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   HiCollection,
   HiCurrencyDollar,
@@ -17,6 +17,7 @@ import SellerSidebar from '../../components/SellerSidebar';
 
 export default function SellerDashboard() {
   const { shop } = useSeller();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     productCount: 0,
     inventoryValue: 0,
@@ -37,13 +38,17 @@ export default function SellerDashboard() {
         setStats(dashRes.data?.stats || {});
         setOrderCount(ordersRes.data?.total || 0);
       } catch (err) {
+        if (err.response?.status === 404) {
+          navigate('/seller/create-shop');
+          return;
+        }
         console.error('Error loading dashboard data:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchDashboard();
-  }, []);
+  }, [navigate]);
 
   const statCards = [
     { icon: <HiShoppingBag />, value: orderCount, label: 'Customer Orders', color: '#ec4899', link: '/dashboard/orders' },

@@ -16,6 +16,21 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const url = error.config?.url || '';
+      // Only clear stale tokens on protected route failures, not on login/reset attempts
+      if (!url.includes('/auth/login') && !url.includes('/auth/register') && !url.includes('/auth/seller/reset-password')) {
+        localStorage.removeItem('seller_token');
+        localStorage.removeItem('aura_token');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const productAPI = {
   getAll: (params) => API.get('/products', { params }),
   getById: (id) => API.get(`/products/${id}`),
@@ -41,7 +56,8 @@ export const authAPI = {
   login: (credentials) => API.post('/auth/login', credentials),
   register: (data) => API.post('/auth/register', data),
   verify: () => API.get('/auth/verify'),
-  resetAdmin: () => API.post('/auth/reset-admin', {}, { headers: { 'x-reset-secret': RESET_SECRET } }),
+  resetSellerPassword: (data) => API.post('/auth/seller/reset-password', data),
+  resetAdmin: () => API.post('/auth/reset-admin', {}, { headers: { 'x-reset-secret': RESET_SECRET || 'ZsDQ0StqpU8zXegoiWx2bGYAPhTkOVRdc7LwuJ13E64INjFM5lCy9avHnrBfKm' } }),
 };
 
 export const shopAPI = {

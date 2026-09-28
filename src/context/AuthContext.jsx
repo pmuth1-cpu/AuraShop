@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     const { data } = await authAPI.login({ username, password });
     localStorage.setItem('aura_token', data.token);
-    setAdmin(data.admin);
+    setAdmin(data.admin || data.user);
     return data;
   };
 
