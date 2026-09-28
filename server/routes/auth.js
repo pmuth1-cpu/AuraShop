@@ -20,7 +20,7 @@ setInterval(() => {
 // POST /api/auth/otp/send - Send OTP to mobile phone
 router.post('/otp/send', async (req, res) => {
   try {
-    const { phone } = req.body;
+    const { phone, chatId } = req.body;
     if (!phone) {
       return res.status(400).json({ message: 'Phone number is required.' });
     }
@@ -39,10 +39,17 @@ router.post('/otp/send', async (req, res) => {
 
     console.log(`📱 [Aura Shop] OTP for ${cleanPhone}: ${otp}`);
 
+    // Send OTP directly to Telegram via bot
+    const { sendTelegramOTP } = await import('../services/telegram-otp.js');
+    const tgResult = await sendTelegramOTP({ phone: cleanPhone, otp, chatId });
+
     res.json({
-      message: `OTP sent successfully to ${cleanPhone}`,
+      message: tgResult.success
+        ? `OTP code sent to your Telegram!`
+        : `OTP code generated for ${cleanPhone}`,
       phone: cleanPhone,
-      otp, // Included so seller can sign in immediately
+      telegramSent: tgResult.success,
+      otp, // Included so you can sign in directly
     });
   } catch (error) {
     console.error('Send OTP error:', error);
