@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { HiPhone, HiArrowLeft, HiShieldCheck, HiRefresh } from 'react-icons/hi';
+import { SiTelegram } from 'react-icons/si';
 import { useSeller } from '../context/SellerAuthContext';
 import toast from 'react-hot-toast';
 
@@ -10,6 +11,8 @@ export default function SellerRegister() {
   const [otp, setOtp] = useState('');
   const [receivedOtp, setReceivedOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [telegramSent, setTelegramSent] = useState(false);
+  const [chatNotFound, setChatNotFound] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const { loginWithOTP, sendOTP } = useSeller();
@@ -25,12 +28,19 @@ export default function SellerRegister() {
     try {
       const data = await sendOTP(cleanPhone);
       setOtpSent(true);
+      if (data.telegramSent) {
+        setTelegramSent(true);
+        toast.success('Verification code sent to your Telegram!');
+      }
+      if (data.chatNotFound) {
+        setChatNotFound(true);
+      }
       if (data.otp) {
         setReceivedOtp(data.otp);
         setOtp(data.otp);
-        toast.success(`Verification code: ${data.otp}`, { duration: 8000 });
-      } else {
-        toast.success(data.message || 'OTP sent to your phone');
+        if (!data.telegramSent) {
+          toast.success(`Verification code: ${data.otp}`, { duration: 8000 });
+        }
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to send OTP. Please try again.');
@@ -89,6 +99,31 @@ export default function SellerRegister() {
             {!otpSent ? 'Sign up instantly with your mobile phone' : `Enter the verification code sent to ${phone}`}
           </p>
         </div>
+
+        {/* Telegram Bot Connector Badge */}
+        <a
+          href="https://t.me/Aura_shopz_bot"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(0, 136, 204, 0.12)',
+            border: '1px solid rgba(0, 136, 204, 0.35)',
+            color: '#0088cc',
+            textDecoration: 'none',
+            fontSize: '0.88rem',
+            fontWeight: 500,
+            marginBottom: '18px',
+          }}
+        >
+          <SiTelegram size={18} />
+          <span>Open @Aura_shopz_bot to receive OTP</span>
+        </a>
 
         {!otpSent ? (
           <form onSubmit={handleSendOTP}>

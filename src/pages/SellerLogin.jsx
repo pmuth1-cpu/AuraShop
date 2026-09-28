@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { HiPhone, HiLockClosed, HiArrowLeft, HiShieldCheck, HiRefresh } from 'react-icons/hi';
+import { SiTelegram } from 'react-icons/si';
 import { useSeller } from '../context/SellerAuthContext';
 import toast from 'react-hot-toast';
 
@@ -10,6 +11,8 @@ export default function SellerLogin() {
   const [otp, setOtp] = useState('');
   const [receivedOtp, setReceivedOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [telegramSent, setTelegramSent] = useState(false);
+  const [chatNotFound, setChatNotFound] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Fallback password login mode
@@ -30,12 +33,20 @@ export default function SellerLogin() {
     try {
       const data = await sendOTP(cleanPhone);
       setOtpSent(true);
+      if (data.telegramSent) {
+        setTelegramSent(true);
+        toast.success('Verification code sent to your Telegram!');
+      }
+      if (data.chatNotFound) {
+        setChatNotFound(true);
+        toast('Open @Aura_shopz_bot and tap Start to receive codes in Telegram', { icon: '✈️', duration: 7000 });
+      }
       if (data.otp) {
         setReceivedOtp(data.otp);
-        setOtp(data.otp); // Pre-fill for instant frictionless sign-in
-        toast.success(`Verification code: ${data.otp}`, { duration: 8000 });
-      } else {
-        toast.success(data.message || 'OTP sent to your phone');
+        setOtp(data.otp); // Pre-fill for instant sign-in
+        if (!data.telegramSent) {
+          toast.success(`Verification code: ${data.otp}`, { duration: 8000 });
+        }
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to send OTP. Please try again.');
@@ -117,6 +128,33 @@ export default function SellerLogin() {
           </p>
         </div>
 
+        {/* Telegram Bot Connector Badge */}
+        {!usePasswordLogin && (
+          <a
+            href="https://t.me/Aura_shopz_bot"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(0, 136, 204, 0.12)',
+              border: '1px solid rgba(0, 136, 204, 0.35)',
+              color: '#0088cc',
+              textDecoration: 'none',
+              fontSize: '0.88rem',
+              fontWeight: 500,
+              marginBottom: '18px',
+            }}
+          >
+            <SiTelegram size={18} />
+            <span>Open @Aura_shopz_bot to receive OTP</span>
+          </a>
+        )}
+
         {!usePasswordLogin ? (
           !otpSent ? (
             <form onSubmit={handleSendOTP}>
@@ -135,7 +173,7 @@ export default function SellerLogin() {
                   />
                 </div>
                 <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>
-                  No password needed. We'll send an instant verification code.
+                  No password needed. An instant verification code will be sent.
                 </small>
               </div>
 
@@ -161,6 +199,33 @@ export default function SellerLogin() {
             </form>
           ) : (
             <form onSubmit={handleVerifyOTP}>
+              {telegramSent ? (
+                <div style={{
+                  background: 'rgba(0, 136, 204, 0.12)',
+                  border: '1px solid rgba(0, 136, 204, 0.4)',
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: '18px',
+                  textAlign: 'center',
+                  fontSize: '0.9rem',
+                  color: '#0088cc',
+                }}>
+                  ✈️ Code sent to your Telegram (@Aura_shopz_bot)!
+                </div>
+              ) : chatNotFound ? (
+                <div style={{
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: '18px',
+                  textAlign: 'center',
+                  fontSize: '0.85rem',
+                }}>
+                  Please <a href="https://t.me/Aura_shopz_bot" target="_blank" rel="noopener noreferrer" style={{ color: '#0088cc', fontWeight: 600, textDecoration: 'underline' }}>open @Aura_shopz_bot</a> and tap <strong>Start</strong> once so the bot can message you!
+                </div>
+              ) : null}
+
               {receivedOtp && (
                 <div style={{
                   background: 'rgba(16, 185, 129, 0.12)',

@@ -46,9 +46,13 @@ router.post('/otp/send', async (req, res) => {
     res.json({
       message: tgResult.success
         ? `OTP code sent to your Telegram!`
-        : `OTP code generated for ${cleanPhone}`,
+        : tgResult.reason === 'chat_not_found'
+          ? `Please click Start in @${tgResult.botUsername || 'Aura_shopz_bot'} on Telegram to receive codes.`
+          : `OTP code generated for ${cleanPhone}`,
       phone: cleanPhone,
       telegramSent: tgResult.success,
+      chatNotFound: tgResult.reason === 'chat_not_found',
+      botUsername: tgResult.botUsername || 'Aura_shopz_bot',
       otp, // Included so you can sign in directly
     });
   } catch (error) {
