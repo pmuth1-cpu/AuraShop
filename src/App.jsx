@@ -10,6 +10,7 @@ import CategoryPage from './pages/CategoryPage';
 import SellerRegister from './pages/SellerRegister';
 import SellerLogin from './pages/SellerLogin';
 import CreateShop from './pages/CreateShop';
+import TelegramAuth from './pages/TelegramAuth';
 
 // Seller dashboard pages
 import SellerDashboard from './pages/seller/SellerDashboard';
@@ -44,6 +45,7 @@ export default function App() {
       {/* Seller Auth */}
       <Route path="/seller/register" element={<SellerRegister />} />
       <Route path="/seller/login" element={<SellerLogin />} />
+      <Route path="/seller/telegram-auth" element={<TelegramAuth />} />
       <Route path="/seller/create-shop" element={<SellerProtectedRoute><CreateShop /></SellerProtectedRoute>} />
 
       {/* Seller Dashboard */}

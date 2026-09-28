@@ -21,6 +21,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  telegramId: {
+    type: String,
+    sparse: true,
+    index: true,
+  },
+  telegramUsername: {
+    type: String,
+    trim: true,
+    lowercase: true,
+  },
   role: {
     type: String,
     enum: ['seller', 'admin'],

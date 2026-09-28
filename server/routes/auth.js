@@ -152,6 +152,41 @@ router.post('/otp/verify', async (req, res) => {
     res.status(500).json({ message: 'Login failed.', error: error.message });
   }
 });
+
+// POST /api/auth/telegram/login - Direct login with Telegram username or ID
+router.post('/telegram/login', async (req, res) => {
+  try {
+    const { username, telegramId } = req.body;
+    const { loginByTelegram } = await import('../services/telegram-bot.js');
+    const result = await loginByTelegram({ username, telegramId });
+    if (!result) {
+      return res.status(404).json({ message: 'No Telegram account found. Please open @Aura_shopz_bot and tap Start first.' });
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Telegram login error:', error);
+    res.status(500).json({ message: 'Login failed.', error: error.message });
+  }
+});
+
+// GET /api/auth/telegram/check-session - Check if user started bot with session code
+router.get('/telegram/check-session', async (req, res) => {
+  try {
+    const { sessionCode } = req.query;
+    if (!sessionCode) return res.json({ verified: false });
+
+    const { telegramSessions } = await import('../services/telegram-bot.js');
+    const session = telegramSessions.get(sessionCode);
+    if (session) {
+      telegramSessions.delete(sessionCode);
+      return res.json({ verified: true, ...session });
+    }
+    res.json({ verified: false });
+  } catch (error) {
+    res.json({ verified: false });
+  }
+});
+
 router.post('/register', async (req, res) => {
   try {
     const { email, password, displayName, phone } = req.body;

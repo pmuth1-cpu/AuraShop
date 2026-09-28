@@ -15,6 +15,7 @@ import buyerRoutes from './routes/buyer.js';
 import notificationRoutes from './routes/notifications.js';
 import orderRoutes from './routes/orders.js';
 import { startSubscriptionChecker } from './services/subscription-checker.js';
+import { startTelegramBotPolling } from './services/telegram-bot.js';
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -93,6 +94,8 @@ async function start() {
     console.log('✅ Database connected');
     // Start subscription checker after DB connection
     startSubscriptionChecker();
+    // Start Telegram bot worker for instant messenger login
+    startTelegramBotPolling();
   } catch (err) {
     console.error('⚠️ Database connection failed (continuing anyway):', err.message);
   }

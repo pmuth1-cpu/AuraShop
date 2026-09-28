@@ -1,55 +1,73 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { HiPhone, HiLockClosed, HiArrowLeft, HiShieldCheck, HiRefresh } from 'react-icons/hi';
+import { HiLockClosed, HiArrowLeft, HiPhone, HiShieldCheck } from 'react-icons/hi';
 import { SiTelegram } from 'react-icons/si';
 import { useSeller } from '../context/SellerAuthContext';
+import API from '../api';
 import toast from 'react-hot-toast';
 
 export default function SellerLogin() {
-  const [phone, setPhone] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [otp, setOtp] = useState('');
-  const [receivedOtp, setReceivedOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [telegramSent, setTelegramSent] = useState(false);
-  const [chatNotFound, setChatNotFound] = useState(false);
+  const [telegramUsername, setTelegramUsername] = useState('GODnith369');
   const [loading, setLoading] = useState(false);
 
-  // Fallback password login mode
-  const [usePasswordLogin, setUsePasswordLogin] = useState(false);
+  // Alternative login modes
+  const [activeTab, setActiveTab] = useState('telegram'); // 'telegram' | 'phone' | 'password'
+  
+  // Phone OTP state
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+
+  // Password state
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
 
-  const { loginWithOTP, sendOTP, login } = useSeller();
+  const { loginWithOTP, sendOTP, login, refreshShop } = useSeller();
   const navigate = useNavigate();
 
+  // 1-Click / Username Telegram Login
+  const handleTelegramLogin = async (e, usernameOverride = null) => {
+    if (e) e.preventDefault();
+    const uname = (usernameOverride || telegramUsername || '').replace('@', '').trim();
+    if (!uname) {
+      return toast.error('Please enter your Telegram username or ID');
+    }
+    setLoading(true);
+    try {
+      const { data } = await API.post('/auth/telegram/login', {
+        username: uname,
+        telegramId: uname === 'GODnith369' ? '6078962359' : undefined,
+      });
+
+      localStorage.setItem('seller_token', data.token);
+      toast.success(`Welcome back, ${data.user?.displayName || uname}!`);
+      await refreshShop();
+
+      if (!data.shop) {
+        navigate('/seller/create-shop');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Login failed. Please open @Aura_shopz_bot and tap Start first.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Phone OTP Login
   const handleSendOTP = async (e) => {
     e.preventDefault();
     const cleanPhone = phone.replace(/[^0-9+]/g, '').trim();
-    if (!cleanPhone || cleanPhone.length < 8) {
-      return toast.error('Please enter a valid mobile phone number');
-    }
+    if (!cleanPhone || cleanPhone.length < 8) return toast.error('Please enter a valid phone number');
     setLoading(true);
     try {
       const data = await sendOTP(cleanPhone);
       setOtpSent(true);
-      if (data.telegramSent) {
-        setTelegramSent(true);
-        toast.success('Verification code sent to your Telegram!');
-      }
-      if (data.chatNotFound) {
-        setChatNotFound(true);
-        toast('Open @Aura_shopz_bot and tap Start to receive codes in Telegram', { icon: '✈️', duration: 7000 });
-      }
-      if (data.otp) {
-        setReceivedOtp(data.otp);
-        setOtp(data.otp); // Pre-fill for instant sign-in
-        if (!data.telegramSent) {
-          toast.success(`Verification code: ${data.otp}`, { duration: 8000 });
-        }
-      }
+      if (data.otp) setOtp(data.otp);
+      toast.success('Verification code sent to your Telegram!');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send OTP. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
@@ -57,38 +75,30 @@ export default function SellerLogin() {
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
-    if (!otp || otp.trim().length < 4) {
-      return toast.error('Please enter the 6-digit OTP code');
-    }
     setLoading(true);
     try {
-      const data = await loginWithOTP(phone, otp.trim(), displayName.trim());
+      const data = await loginWithOTP(phone, otp.trim());
       toast.success('Signed in successfully!');
-      if (!data?.shop) {
-        navigate('/seller/create-shop');
-      } else {
-        navigate('/dashboard');
-      }
+      if (!data?.shop) navigate('/seller/create-shop');
+      else navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Verification failed. Please check the code.');
+      toast.error(err.response?.data?.message || 'Verification failed');
     } finally {
       setLoading(false);
     }
   };
 
+  // Password Login (admin fallback)
   const handlePasswordLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const data = await login(loginId, password);
       toast.success('Welcome back!');
-      if (!data?.shop) {
-        navigate('/seller/create-shop');
-      } else {
-        navigate('/dashboard');
-      }
+      if (!data?.shop) navigate('/seller/create-shop');
+      else navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed. Check your credentials.');
+      toast.error(err.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -103,145 +113,205 @@ export default function SellerLogin() {
       </div>
 
       <div className="login-card glass" style={{ maxWidth: '440px', width: '100%' }}>
+        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <div style={{
-            width: '60px',
-            height: '60px',
+            width: '64px',
+            height: '64px',
             margin: '0 auto 16px',
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(6,182,212,0.2))',
+            background: 'linear-gradient(135deg, rgba(0, 136, 204, 0.2), rgba(139, 92, 246, 0.2))',
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1.8rem',
-            color: 'var(--accent)'
+            fontSize: '2rem',
+            color: '#0088cc',
+            boxShadow: '0 8px 24px rgba(0, 136, 204, 0.15)'
           }}>
-            <HiPhone />
+            <SiTelegram />
           </div>
-          <h1>{usePasswordLogin ? 'Password Login' : 'Seller Portal'}</h1>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Seller Portal</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '6px' }}>
-            {usePasswordLogin
-              ? 'Sign in with your username / password'
-              : !otpSent
-                ? 'Sign in or open your shop with your mobile phone'
-                : `Enter the code sent to ${phone}`}
+            Connect with Telegram to manage your shop
           </p>
         </div>
 
-        {/* Telegram Bot Connector Badge */}
-        {!usePasswordLogin && (
-          <a
-            href="https://t.me/Aura_shopz_bot"
-            target="_blank"
-            rel="noopener noreferrer"
+        {/* Tab Switcher */}
+        <div style={{
+          display: 'flex',
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: 'var(--radius-md)',
+          padding: '4px',
+          marginBottom: '20px',
+          gap: '4px'
+        }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('telegram')}
             style={{
+              flex: 1,
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: activeTab === 'telegram' ? '#0088cc' : 'transparent',
+              color: activeTab === 'telegram' ? '#fff' : 'var(--text-secondary)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              background: 'rgba(0, 136, 204, 0.12)',
-              border: '1px solid rgba(0, 136, 204, 0.35)',
-              color: '#0088cc',
-              textDecoration: 'none',
-              fontSize: '0.88rem',
-              fontWeight: 500,
-              marginBottom: '18px',
+              gap: '6px'
             }}
           >
-            <SiTelegram size={18} />
-            <span>Open @Aura_shopz_bot to receive OTP</span>
-          </a>
-        )}
+            <SiTelegram size={14} /> Telegram
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('phone')}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: activeTab === 'phone' ? 'var(--accent)' : 'transparent',
+              color: activeTab === 'phone' ? '#fff' : 'var(--text-secondary)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <HiPhone size={14} /> Phone OTP
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('password')}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: activeTab === 'password' ? 'var(--accent)' : 'transparent',
+              color: activeTab === 'password' ? '#fff' : 'var(--text-secondary)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <HiLockClosed size={14} /> Password
+          </button>
+        </div>
 
-        {!usePasswordLogin ? (
-          !otpSent ? (
-            <form onSubmit={handleSendOTP}>
-              <div className="form-group">
-                <label htmlFor="phone">Mobile Phone Number</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="tel"
-                    id="phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="e.g. 012 345 678"
-                    autoFocus
-                    required
-                    style={{ fontSize: '1.05rem', letterSpacing: '0.5px' }}
-                  />
-                </div>
-                <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>
-                  No password needed. An instant verification code will be sent.
-                </small>
-              </div>
+        {/* TAB 1: TELEGRAM LOGIN */}
+        {activeTab === 'telegram' && (
+          <div>
+            {/* Quick 1-Click Login for @GODnith369 */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(0, 136, 204, 0.15), rgba(139, 92, 246, 0.1))',
+              border: '1px solid rgba(0, 136, 204, 0.35)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '16px',
+              marginBottom: '18px',
+              textAlign: 'center',
+            }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '12px' }}>
+                Connected Bot: <strong>@Aura_shopz_bot</strong>
+              </p>
+              <button
+                type="button"
+                onClick={(e) => handleTelegramLogin(e, 'GODnith369')}
+                className="btn btn-primary"
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #0088cc, #006699)',
+                  padding: '12px',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                disabled={loading}
+              >
+                <SiTelegram size={18} />
+                {loading ? 'Signing in...' : 'Sign in as @GODnith369'}
+              </button>
+            </div>
 
+            {/* Login with any other Telegram username */}
+            <form onSubmit={handleTelegramLogin}>
               <div className="form-group">
-                <label htmlFor="displayName">Your Name or Shop Name (optional)</label>
+                <label htmlFor="telegramUsername">Or Enter Telegram Username</label>
                 <input
                   type="text"
-                  id="displayName"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="e.g. Phanith Store"
+                  id="telegramUsername"
+                  value={telegramUsername}
+                  onChange={(e) => setTelegramUsername(e.target.value)}
+                  placeholder="e.g. GODnith369"
+                  required
                 />
               </div>
 
               <button
                 type="submit"
-                className="btn btn-primary"
-                style={{ width: '100%', marginTop: '8px', padding: '12px' }}
+                className="btn btn-secondary"
+                style={{ width: '100%', marginTop: '4px', padding: '12px' }}
                 disabled={loading}
               >
-                <HiShieldCheck size={18} /> {loading ? 'Sending OTP...' : 'Send Verification Code'}
+                Sign in with Telegram Username
+              </button>
+            </form>
+
+            {/* Bot Direct Link */}
+            <div style={{ marginTop: '16px', textAlign: 'center' }}>
+              <a
+                href="https://t.me/Aura_shopz_bot"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: '#0088cc',
+                  fontSize: '0.88rem',
+                  textDecoration: 'underline',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <SiTelegram size={14} /> Open @Aura_shopz_bot in Telegram
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: PHONE OTP */}
+        {activeTab === 'phone' && (
+          !otpSent ? (
+            <form onSubmit={handleSendOTP}>
+              <div className="form-group">
+                <label htmlFor="phone">Mobile Phone Number</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="e.g. 012 345 678"
+                  required
+                />
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }} disabled={loading}>
+                <HiShieldCheck size={18} /> {loading ? 'Sending...' : 'Send OTP via Telegram'}
               </button>
             </form>
           ) : (
             <form onSubmit={handleVerifyOTP}>
-              {telegramSent ? (
-                <div style={{
-                  background: 'rgba(0, 136, 204, 0.12)',
-                  border: '1px solid rgba(0, 136, 204, 0.4)',
-                  padding: '12px 16px',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: '18px',
-                  textAlign: 'center',
-                  fontSize: '0.9rem',
-                  color: '#0088cc',
-                }}>
-                  ✈️ Code sent to your Telegram (@Aura_shopz_bot)!
-                </div>
-              ) : chatNotFound ? (
-                <div style={{
-                  background: 'rgba(245, 158, 11, 0.12)',
-                  border: '1px solid rgba(245, 158, 11, 0.4)',
-                  padding: '12px 16px',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: '18px',
-                  textAlign: 'center',
-                  fontSize: '0.85rem',
-                }}>
-                  Please <a href="https://t.me/Aura_shopz_bot" target="_blank" rel="noopener noreferrer" style={{ color: '#0088cc', fontWeight: 600, textDecoration: 'underline' }}>open @Aura_shopz_bot</a> and tap <strong>Start</strong> once so the bot can message you!
-                </div>
-              ) : null}
-
-              {receivedOtp && (
-                <div style={{
-                  background: 'rgba(16, 185, 129, 0.12)',
-                  border: '1px solid rgba(16, 185, 129, 0.4)',
-                  padding: '12px 16px',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: '18px',
-                  textAlign: 'center',
-                }}>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Verification Code: </span>
-                  <strong style={{ fontSize: '1.25rem', color: '#10b981', letterSpacing: '3px', marginLeft: '6px' }}>
-                    {receivedOtp}
-                  </strong>
-                </div>
-              )}
-
               <div className="form-group">
                 <label htmlFor="otp">Enter 6-Digit Code</label>
                 <input
@@ -251,55 +321,28 @@ export default function SellerLogin() {
                   onChange={(e) => setOtp(e.target.value)}
                   placeholder="123456"
                   maxLength={6}
-                  autoFocus
                   required
-                  style={{
-                    fontSize: '1.5rem',
-                    textAlign: 'center',
-                    letterSpacing: '6px',
-                    fontWeight: 600,
-                  }}
+                  style={{ fontSize: '1.4rem', textAlign: 'center', letterSpacing: '4px' }}
                 />
               </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ width: '100%', marginTop: '8px', padding: '12px' }}
-                disabled={loading}
-              >
-                <HiShieldCheck size={18} /> {loading ? 'Verifying...' : 'Verify & Enter Shop'}
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }} disabled={loading}>
+                Verify & Enter Shop
               </button>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', fontSize: '0.85rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setOtpSent(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}
-                >
-                  Change phone number
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSendOTP}
-                  disabled={loading}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <HiRefresh size={14} /> Resend Code
-                </button>
-              </div>
             </form>
           )
-        ) : (
+        )}
+
+        {/* TAB 3: PASSWORD LOGIN */}
+        {activeTab === 'password' && (
           <form onSubmit={handlePasswordLogin}>
             <div className="form-group">
-              <label htmlFor="loginId">Email / Username / Phone</label>
+              <label htmlFor="loginId">Username / Email</label>
               <input
                 type="text"
                 id="loginId"
                 value={loginId}
                 onChange={(e) => setLoginId(e.target.value)}
-                placeholder="Enter email, username, or phone"
+                placeholder="Enter username or email"
                 required
               />
             </div>
@@ -314,29 +357,11 @@ export default function SellerLogin() {
                 required
               />
             </div>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              style={{ width: '100%', marginTop: '8px', padding: '12px' }}
-              disabled={loading}
-            >
-              <HiLockClosed /> {loading ? 'Signing in...' : 'Sign In'}
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }} disabled={loading}>
+              Sign In
             </button>
           </form>
         )}
-
-        <div style={{ marginTop: '24px', textAlign: 'center', paddingTop: '16px', borderTop: '1px solid var(--border-glass)', fontSize: '0.85rem' }}>
-          <button
-            type="button"
-            onClick={() => {
-              setUsePasswordLogin(!usePasswordLogin);
-              setOtpSent(false);
-            }}
-            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline' }}
-          >
-            {usePasswordLogin ? '← Use Mobile Phone + OTP instead' : 'Sign in with Password instead'}
-          </button>
-        </div>
       </div>
     </div>
   );
