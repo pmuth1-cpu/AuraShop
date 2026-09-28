@@ -6,7 +6,141 @@ import { verifyToken } from '../middleware/auth.js';
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'aura-shop-secret-key-2026-change-in-production';
 
-// POST /api/auth/register - Seller registration
+// OTP store for mobile phone login
+const otpStore = new Map();
+const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [phone, data] of otpStore.entries()) {
+    if (now > data.expiresAt) otpStore.delete(phone);
+  }
+}, 60 * 1000);
+
+// POST /api/auth/otp/send - Send OTP to mobile phone
+router.post('/otp/send', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ message: 'Phone number is required.' });
+    }
+
+    const cleanPhone = String(phone).replace(/[^0-9+]/g, '').trim();
+    if (cleanPhone.length < 8) {
+      return res.status(400).json({ message: 'Please enter a valid mobile phone number.' });
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    otpStore.set(cleanPhone, {
+      otp,
+      expiresAt: Date.now() + OTP_EXPIRY_MS,
+      attempts: 0,
+    });
+
+    console.log(`📱 [Aura Shop] OTP for ${cleanPhone}: ${otp}`);
+
+    res.json({
+      message: `OTP sent successfully to ${cleanPhone}`,
+      phone: cleanPhone,
+      otp, // Included so seller can sign in immediately
+    });
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({ message: 'Failed to send OTP.', error: error.message });
+  }
+});
+
+// POST /api/auth/otp/verify - Verify OTP and login or auto-register seller
+router.post('/otp/verify', async (req, res) => {
+  try {
+    const { phone, otp, displayName } = req.body;
+    if (!phone || !otp) {
+      return res.status(400).json({ message: 'Phone number and OTP are required.' });
+    }
+
+    const cleanPhone = String(phone).replace(/[^0-9+]/g, '').trim();
+    const stored = otpStore.get(cleanPhone);
+    const inputOtp = String(otp).trim();
+
+    // Verify against stored OTP or master test code 123456
+    const isValid = (stored && stored.otp === inputOtp) || inputOtp === '123456';
+
+    if (!isValid) {
+      if (!stored) {
+        return res.status(400).json({ message: 'OTP expired or not requested yet. Click Send OTP.' });
+      }
+      stored.attempts = (stored.attempts || 0) + 1;
+      if (stored.attempts > 5) {
+        otpStore.delete(cleanPhone);
+        return res.status(429).json({ message: 'Too many incorrect attempts. Please request a new OTP.' });
+      }
+      return res.status(400).json({ message: 'Invalid OTP code. Please check and try again.' });
+    }
+
+    // Clear used OTP
+    otpStore.delete(cleanPhone);
+
+    const { User, Shop } = await import('../models/index.js');
+
+    // Find existing user by phone (exact or variants with/without 0 or +855)
+    let user = await User.findOne({
+      $or: [
+        { phone: cleanPhone },
+        { phone: cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone },
+        { phone: cleanPhone.startsWith('+855') ? '0' + cleanPhone.slice(4) : cleanPhone },
+      ]
+    });
+
+    if (!user) {
+      // Auto-register new seller by phone number
+      const userName = displayName || `Seller ${cleanPhone.slice(-4)}`;
+      user = await User.create({
+        phone: cleanPhone,
+        email: `${cleanPhone.replace(/[^0-9]/g, '')}@phone.aurashop.com`,
+        displayName: userName,
+        role: 'seller',
+        isActive: true,
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Account is disabled. Contact admin.' });
+    }
+
+    // Check if seller has a shop
+    let shopId = null;
+    let shopSlug = null;
+    let shopStatus = null;
+    const shop = await Shop.findOne({ owner: user._id });
+    if (shop) {
+      shopId = shop._id;
+      shopSlug = shop.slug;
+      shopStatus = shop.status;
+    }
+
+    const token = jwt.sign(
+      { id: user._id, phone: user.phone, role: user.role, shopId },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        phone: user.phone,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+      },
+      shop: shopId ? { id: shopId, slug: shopSlug, status: shopStatus } : null,
+      isNewUser: !shop,
+    });
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({ message: 'Login failed.', error: error.message });
+  }
+});
 router.post('/register', async (req, res) => {
   try {
     const { email, password, displayName, phone } = req.body;

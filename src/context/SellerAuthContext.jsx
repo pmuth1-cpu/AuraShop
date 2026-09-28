@@ -23,6 +23,19 @@ export function SellerAuthProvider({ children }) {
     }
   }, []);
 
+  const sendOTP = async (phone) => {
+    const { data } = await API.post('/auth/otp/send', { phone });
+    return data;
+  };
+
+  const loginWithOTP = async (phone, otp, displayName) => {
+    const { data } = await API.post('/auth/otp/verify', { phone, otp, displayName });
+    localStorage.setItem('seller_token', data.token);
+    setSeller(data.user);
+    setShop(data.shop);
+    return data;
+  };
+
   const login = async (email, password) => {
     const { data } = await API.post('/auth/login', { email, password });
     if (data.user.role !== 'seller') throw new Error('Not a seller account');
@@ -47,7 +60,7 @@ export function SellerAuthProvider({ children }) {
   };
 
   return (
-    <SellerAuthContext.Provider value={{ seller, shop, loading, login, logout, refreshShop, isAuthenticated: !!seller }}>
+    <SellerAuthContext.Provider value={{ seller, shop, loading, login, loginWithOTP, sendOTP, logout, refreshShop, isAuthenticated: !!seller }}>
       {children}
     </SellerAuthContext.Provider>
   );
