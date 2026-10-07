@@ -7,13 +7,13 @@ import toast from 'react-hot-toast';
 export default function TelegramAuth() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('Verifying your Telegram login...');
-  const { refreshShop } = useSeller();
+  const { refreshShop, setSession } = useSeller();
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = searchParams.get('token');
     if (!token) {
-      toast.error('Invalid Telegram authentication link');
+      toast.error('Invalid authentication link');
       navigate('/seller/login');
       return;
     }
@@ -25,6 +25,10 @@ export default function TelegramAuth() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
+        if (setSession) {
+          setSession(token, res.data.user, res.data.shop);
+        }
+
         toast.success(`Welcome, ${res.data.user?.displayName || 'Seller'}!`);
         await refreshShop();
 
@@ -34,9 +38,9 @@ export default function TelegramAuth() {
           navigate('/seller/create-shop');
         }
       } catch (err) {
-        console.error('Telegram auth failed:', err);
+        console.error('Auth verification failed:', err);
         localStorage.removeItem('seller_token');
-        toast.error('Authentication expired. Please tap Start in @Aura_shopz_bot again.');
+        toast.error('Authentication expired or invalid. Please sign in with your email or phone.');
         navigate('/seller/login');
       }
     };

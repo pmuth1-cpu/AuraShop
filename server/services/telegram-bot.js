@@ -1,7 +1,7 @@
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8847884731:AAE1c6SJn8Ct191KFTZ6V6XfkV2GKc3ijS0';
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const JWT_SECRET = process.env.JWT_SECRET || 'aura-shop-secret-key-2026-change-in-production';
 const CLIENT_URL = process.env.CLIENT_URL || 'https://aurashopforcam.vercel.app';
 

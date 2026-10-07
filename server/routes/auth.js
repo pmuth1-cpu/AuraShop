@@ -37,23 +37,26 @@ router.post('/otp/send', async (req, res) => {
       attempts: 0,
     });
 
-    console.log(`📱 [Aura Shop] OTP for ${cleanPhone}: ${otp}`);
+    console.log(`📱 [Aura Shop] Verification code for ${cleanPhone}: ${otp}`);
 
-    // Send OTP directly to Telegram via bot
-    const { sendTelegramOTP } = await import('../services/telegram-otp.js');
-    const tgResult = await sendTelegramOTP({ phone: cleanPhone, otp, chatId });
+    // Attempt Telegram only if bot token is explicitly configured
+    let tgSent = false;
+    if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_TOKEN.trim() !== '') {
+      try {
+        const { sendTelegramOTP } = await import('../services/telegram-otp.js');
+        const tgResult = await sendTelegramOTP({ phone: cleanPhone, otp, chatId });
+        tgSent = !!tgResult.success;
+      } catch (err) {
+        console.warn('Optional Telegram notification skipped:', err.message);
+      }
+    }
 
     res.json({
-      message: tgResult.success
-        ? `OTP code sent to your Telegram!`
-        : tgResult.reason === 'chat_not_found'
-          ? `Please click Start in @${tgResult.botUsername || 'Aura_shopz_bot'} on Telegram to receive codes.`
-          : `OTP code generated for ${cleanPhone}`,
+      message: tgSent ? 'Verification code sent to your Telegram!' : `Verification code generated for ${cleanPhone}.`,
       phone: cleanPhone,
-      telegramSent: tgResult.success,
-      chatNotFound: tgResult.reason === 'chat_not_found',
-      botUsername: tgResult.botUsername || 'Aura_shopz_bot',
-      otp, // Included so you can sign in directly
+      telegramSent: tgSent,
+      otp, // Returned so sellers can immediately log in in-app without any bot
+      inAppCode: otp,
     });
   } catch (error) {
     console.error('Send OTP error:', error);
@@ -187,80 +190,161 @@ router.get('/telegram/check-session', async (req, res) => {
   }
 });
 
+// POST /api/auth/register - Seller registration
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, displayName, phone } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required.' });
+    const { email, password, displayName, phone, shopName, shopDescription } = req.body;
+    if (!password || password.length < 4) {
+      return res.status(400).json({ message: 'Password must be at least 4 characters.' });
     }
-    const { User } = await import('../models/index.js');
-    const existing = await User.findOne({ email: email.toLowerCase() });
-    if (existing) {
-      return res.status(409).json({ message: 'Email already registered.' });
+
+    const { User, Shop } = await import('../models/index.js');
+
+    const cleanPhone = phone ? String(phone).replace(/[^0-9+]/g, '').trim() : '';
+    const cleanEmail = email ? String(email).trim().toLowerCase() : (cleanPhone ? `${cleanPhone.replace(/[^0-9]/g, '')}@aurashop.com` : '');
+
+    if (!cleanEmail && !cleanPhone) {
+      return res.status(400).json({ message: 'Email or phone number is required.' });
     }
+
+    if (cleanEmail) {
+      const existing = await User.findOne({ email: cleanEmail });
+      if (existing) {
+        return res.status(409).json({ message: 'An account with this email already exists.' });
+      }
+    }
+
+    if (cleanPhone) {
+      const existingPhone = await User.findOne({ phone: cleanPhone });
+      if (existingPhone) {
+        return res.status(409).json({ message: 'An account with this phone number already exists.' });
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
+    const userName = displayName || (cleanEmail ? cleanEmail.split('@')[0] : `Seller ${cleanPhone.slice(-4)}`);
+
     const user = await User.create({
-      email: email.toLowerCase(),
+      email: cleanEmail,
       passwordHash,
-      displayName: displayName || email.split('@')[0],
-      phone: phone || '',
+      displayName: userName,
+      phone: cleanPhone || '',
       role: 'seller',
+      isActive: true,
     });
+
+    // Optionally create shop immediately if shopName is provided
+    let createdShop = null;
+    if (shopName && String(shopName).trim()) {
+      const slugify = (await import('slugify')).default;
+      const sName = String(shopName).trim();
+      let slug = slugify(sName, { lower: true, strict: true });
+      let slugExists = await Shop.findOne({ slug });
+      let suffix = 1;
+      while (slugExists) {
+        slug = `${slugify(sName, { lower: true, strict: true })}-${suffix}`;
+        slugExists = await Shop.findOne({ slug });
+        suffix++;
+      }
+
+      createdShop = await Shop.create({
+        owner: user._id,
+        name: sName,
+        slug,
+        description: shopDescription || '',
+        contactPhone: cleanPhone || '',
+        status: 'active',
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: user.role, shopId: createdShop?._id || null },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
     res.status(201).json({
-      message: 'Registration successful. Your account is pending admin approval.',
-      user: { id: user._id, email: user.email, displayName: user.displayName, role: user.role },
+      message: 'Registration successful! Welcome to your seller dashboard.',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        phone: user.phone,
+      },
+      shop: createdShop ? { id: createdShop._id, slug: createdShop.slug, name: createdShop.name, status: createdShop.status } : null,
     });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ message: 'Server error.', error: error.message });
+    res.status(500).json({ message: 'Registration failed.', error: error.message });
   }
 });
 
 // POST /api/auth/login - Login for both sellers and admin
 router.post('/login', async (req, res) => {
   try {
-    const { email, username, password } = req.body;
-    const loginId = String(email || username || '').trim();
+    const { email, username, phone, password } = req.body;
+    const loginId = String(email || username || phone || '').trim();
     if (!loginId || !password) {
-      return res.status(400).json({ message: 'Email/username and password are required.' });
+      return res.status(400).json({ message: 'Email/phone/username and password are required.' });
     }
-    const { User } = await import('../models/index.js');
-    // Try finding by email first, then displayName, then phone
+    const { User, Shop } = await import('../models/index.js');
+
+    const cleanPhone = loginId.replace(/[^0-9+]/g, '');
+
+    // Try finding by email first, then displayName, then phone variants
     let user = await User.findOne({ email: loginId.toLowerCase() });
     if (!user) {
       user = await User.findOne({ displayName: loginId });
     }
-    if (!user) {
-      user = await User.findOne({ phone: loginId });
+    if (!user && cleanPhone.length >= 7) {
+      user = await User.findOne({
+        $or: [
+          { phone: cleanPhone },
+          { phone: cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone },
+          { phone: cleanPhone.startsWith('+855') ? '0' + cleanPhone.slice(4) : cleanPhone },
+        ]
+      });
     }
+
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials.' });
+      return res.status(401).json({ message: 'Invalid credentials. User not found.' });
     }
     if (!user.isActive) {
       return res.status(403).json({ message: 'Account is disabled. Contact admin.' });
     }
+
+    if (!user.passwordHash) {
+      return res.status(400).json({ message: 'No password set for this account. Please use Quick Code or Reset Password.' });
+    }
+
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials.' });
+      return res.status(401).json({ message: 'Invalid credentials. Incorrect password.' });
     }
-    // Include shopId in token if seller has a shop
+
+    // Include shop info in token if seller has a shop
     let shopId = null;
     let shopSlug = null;
+    let shopName = null;
     let shopStatus = null;
     if (user.role === 'seller') {
-      const { Shop } = await import('../models/index.js');
       const shop = await Shop.findOne({ owner: user._id });
       if (shop) {
         shopId = shop._id;
         shopSlug = shop.slug;
+        shopName = shop.name;
         shopStatus = shop.status;
       }
     }
+
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role, shopId },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30d' }
     );
+
     res.json({
       token,
       admin: { id: user._id, username: user.displayName, role: user.role }, // backward compat for AuthContext
@@ -271,7 +355,7 @@ router.post('/login', async (req, res) => {
         role: user.role,
         phone: user.phone,
       },
-      shop: shopId ? { id: shopId, slug: shopSlug, status: shopStatus } : null,
+      shop: shopId ? { id: shopId, slug: shopSlug, name: shopName, status: shopStatus } : null,
     });
   } catch (error) {
     console.error('Login error:', error);

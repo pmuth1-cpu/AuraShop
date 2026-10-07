@@ -94,8 +94,10 @@ async function start() {
     console.log('✅ Database connected');
     // Start subscription checker after DB connection
     startSubscriptionChecker();
-    // Start Telegram bot worker for instant messenger login
-    startTelegramBotPolling();
+    // Start Telegram bot worker only if explicitly configured
+    if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_TOKEN.trim() !== '') {
+      startTelegramBotPolling();
+    }
   } catch (err) {
     console.error('⚠️ Database connection failed (continuing anyway):', err.message);
   }

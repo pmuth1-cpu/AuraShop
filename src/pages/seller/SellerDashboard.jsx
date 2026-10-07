@@ -157,7 +157,7 @@ export default function SellerDashboard() {
                 key={i}
                 style={{ cursor: s.link ? 'pointer' : 'default' }}
                 onClick={() => {
-                  if (s.link) window.location.href = s.link;
+                  if (s.link) navigate(s.link);
                 }}
               >
                 <div className="stat-icon" style={{ background: `${s.color}20`, color: s.color }}>

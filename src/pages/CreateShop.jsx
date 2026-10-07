@@ -9,7 +9,7 @@ export default function CreateShop() {
   const [form, setForm] = useState({ name: '', description: '', telegramUsername: '', contactPhone: '' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { refreshShop } = useSeller();
+  const { refreshShop, setShop } = useSeller();
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.id]: e.target.value }));
   const slugPreview = form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -19,8 +19,11 @@ export default function CreateShop() {
     setLoading(true);
     try {
       const token = localStorage.getItem('seller_token');
-      await API.post('/shops', form, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success('Shop created! Waiting for admin approval.');
+      const { data } = await API.post('/shops', form, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Shop created! Welcome to your dashboard.');
+      if (data?.shop && setShop) {
+        setShop(data.shop);
+      }
       await refreshShop();
       navigate('/dashboard');
     } catch (err) {
@@ -48,7 +51,7 @@ export default function CreateShop() {
             <textarea id="description" value={form.description} onChange={handleChange} placeholder="What do you sell?" required />
           </div>
           <div className="form-group">
-            <label htmlFor="telegramUsername">Telegram Username</label>
+            <label htmlFor="telegramUsername">Telegram or Contact Handle (optional)</label>
             <input type="text" id="telegramUsername" value={form.telegramUsername} onChange={handleChange} placeholder="@username" />
           </div>
           <div className="form-group">

@@ -23,6 +23,20 @@ export function SellerAuthProvider({ children }) {
     }
   }, []);
 
+  const setSession = (token, userData, shopData) => {
+    if (token) localStorage.setItem('seller_token', token);
+    if (userData) setSeller(userData);
+    if (shopData !== undefined) setShop(shopData);
+  };
+
+  const register = async (formData) => {
+    const { data } = await API.post('/auth/register', formData);
+    if (data.token) {
+      setSession(data.token, data.user, data.shop);
+    }
+    return data;
+  };
+
   const sendOTP = async (phone) => {
     const { data } = await API.post('/auth/otp/send', { phone });
     return data;
@@ -30,18 +44,14 @@ export function SellerAuthProvider({ children }) {
 
   const loginWithOTP = async (phone, otp, displayName) => {
     const { data } = await API.post('/auth/otp/verify', { phone, otp, displayName });
-    localStorage.setItem('seller_token', data.token);
-    setSeller(data.user);
-    setShop(data.shop);
+    setSession(data.token, data.user, data.shop);
     return data;
   };
 
-  const login = async (email, password) => {
-    const { data } = await API.post('/auth/login', { email, password });
-    if (data.user.role !== 'seller') throw new Error('Not a seller account');
-    localStorage.setItem('seller_token', data.token);
-    setSeller(data.user);
-    setShop(data.shop);
+  const login = async (loginId, password) => {
+    const { data } = await API.post('/auth/login', { email: loginId, username: loginId, phone: loginId, password });
+    if (data.user?.role !== 'seller') throw new Error('Not a seller account');
+    setSession(data.token, data.user, data.shop);
     return data;
   };
 
@@ -54,13 +64,31 @@ export function SellerAuthProvider({ children }) {
   const refreshShop = async () => {
     try {
       const token = localStorage.getItem('seller_token');
+      if (!token) return null;
       const { data } = await API.get('/shops/my', { headers: { Authorization: `Bearer ${token}` } });
       setShop(data);
-    } catch { /* ignore */ }
+      return data;
+    } catch {
+      return null;
+    }
   };
 
   return (
-    <SellerAuthContext.Provider value={{ seller, shop, loading, login, loginWithOTP, sendOTP, logout, refreshShop, isAuthenticated: !!seller }}>
+    <SellerAuthContext.Provider value={{
+      seller,
+      shop,
+      loading,
+      login,
+      register,
+      loginWithOTP,
+      sendOTP,
+      logout,
+      refreshShop,
+      setSession,
+      setSeller,
+      setShop,
+      isAuthenticated: !!seller,
+    }}>
       {children}
     </SellerAuthContext.Provider>
   );

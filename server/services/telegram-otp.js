@@ -1,15 +1,10 @@
 import axios from 'axios';
 
-const DEFAULT_BOT_TOKEN = '8847884731:AAE1c6SJn8Ct191KFTZ6V6XfkV2GKc3ijS0';
-const DEFAULT_CHAT_ID = '6078962359';
-const BOT_USERNAME = 'Aura_shopz_bot';
-
 export async function sendTelegramOTP({ phone, otp, chatId }) {
-  const token = process.env.TELEGRAM_BOT_TOKEN || DEFAULT_BOT_TOKEN;
-  let targetChat = chatId || process.env.TELEGRAM_CHAT_ID || DEFAULT_CHAT_ID;
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  let targetChat = chatId || process.env.TELEGRAM_CHAT_ID;
 
   if (!token) {
-    console.warn('⚠️ TELEGRAM_BOT_TOKEN is not configured.');
     return { success: false, reason: 'unconfigured' };
   }
 
